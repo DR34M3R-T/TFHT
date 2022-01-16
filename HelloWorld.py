@@ -1,4 +1,4 @@
-import timm#test git
+import timm
 model = timm.create_model('vit_base_patch16_224', pretrained=True)
 model.eval()
 import urllib
