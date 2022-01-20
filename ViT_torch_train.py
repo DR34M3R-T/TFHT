@@ -5,7 +5,9 @@ from torch.utils.data import DataLoader
 from vit_pytorch import ViT
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
-
+learning_rate = 1e-3
+batch_size = 64
+epochs = 5
 
 train_data=datasets.CIFAR10(
     root="dataset\\cifar",
@@ -19,8 +21,8 @@ test_data=datasets.CIFAR10(
     download=True,
     transform=ToTensor()
 )
-train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
+train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 #ViT
 
@@ -38,10 +40,6 @@ v = ViT(
 
 # Initialize the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
-
-learning_rate = 1e-3
-batch_size = 64
-epochs = 5
 
 optimizer = torch.optim.SGD(v.parameters(), lr=learning_rate)
 
