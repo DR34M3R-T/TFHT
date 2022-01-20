@@ -6,7 +6,7 @@ from vit_pytorch import ViT
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 learning_rate = 1e-3
-batch_size = 64
+batch_size = 128
 epochs = 5
 
 train_data=datasets.CIFAR10(
