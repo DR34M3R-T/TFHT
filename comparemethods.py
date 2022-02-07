@@ -31,10 +31,10 @@ from torch.optim.lr_scheduler import StepLR
 # y_train = torch.from_numpy(np.load('./data/UCOON/yTrain.npy'))
 # x_test = torch.from_numpy(np.load('./data/UCOON/xTest.npy'))
 # y_test = torch.from_numpy(np.load('./data/UCOON/yTest.npy'))
-x_train = torch.from_numpy(np.load('./data/XJTU/xTrain.npy'))
-y_train = torch.from_numpy(np.load('./data/XJTU/yTrain.npy'))
-x_test = torch.from_numpy(np.load('./data/XJTU/xTest.npy'))
-y_test = torch.from_numpy(np.load('./data/XJTU/yTest.npy'))
+x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
+y_train = torch.from_numpy(np.load('./dataset/XJTU/yTrain.npy'))
+x_test = torch.from_numpy(np.load('./dataset/XJTU/xTest.npy'))
+y_test = torch.from_numpy(np.load('./dataset/XJTU/yTest.npy'))
 
 # 自定义dataset和数据预处理
 preprocess = transforms.Compose([
