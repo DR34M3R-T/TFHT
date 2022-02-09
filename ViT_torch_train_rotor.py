@@ -1,4 +1,5 @@
 import torch
+torch.set_default_tensor_type(torch.DoubleTensor)
 from torch import nn
 from torchvision import datasets
 from torchvision.transforms import ToTensor
@@ -62,20 +63,19 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 
 class myViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 1, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
 
         assert image_height % patch_height == 0 and image_width % patch_width == 0, 'Image dimensions must be divisible by the patch size.'
 
-        num_patches = (image_height // patch_height) * (image_width // patch_width)
-        patch_dim = channels * patch_height * patch_width
+        num_patches = image_size // patch_size
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
 
         self.to_patch_embedding = nn.Sequential(
-            Rearrange('(h p1) (w p2) -> (h w) (p1 p2)', p1 = patch_height, p2 = patch_width),
-            nn.Linear(patch_dim, dim),
+            Rearrange('b (l p)-> b l p',p=patch_size),
+            nn.Linear(patch_size, dim),
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
@@ -93,7 +93,7 @@ class myViT(nn.Module):
         )
 
     def forward(self, img):
-        print(img)
+        print(img.size())
         x = self.to_patch_embedding(img)
         b, n, _ = x.shape
 
@@ -110,7 +110,7 @@ class myViT(nn.Module):
         return self.mlp_head(x)
 
 v = myViT(
-    image_size = 32,
+    image_size = 2048,
     patch_size = 8,
     num_classes = 10,
     dim = 128,
