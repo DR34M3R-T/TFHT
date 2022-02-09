@@ -10,10 +10,16 @@ from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 import numpy as np
 import ssl
+
+# 设定训练用的设备
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# 打印看一下
+print("Using {} device".format(device))
+
 ssl._create_default_https_context = ssl._create_unverified_context
-learning_rate = 1e-3
+learning_rate = 0.0001
 batch_size = 64
-epochs = 5
+epochs = 15
 x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
 y_train = torch.from_numpy(np.load('./dataset/XJTU/yTrain.npy'))
 x_test = torch.from_numpy(np.load('./dataset/XJTU/xTest.npy'))
@@ -65,11 +71,7 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 class myViT(nn.Module):
     def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 1, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
-        image_height, image_width = pair(image_size)
-        patch_height, patch_width = pair(patch_size)
-
-        assert image_height % patch_height == 0 and image_width % patch_width == 0, 'Image dimensions must be divisible by the patch size.'
-
+        assert image_size % patch_size == 0 , 'Image dimensions must be divisible by the patch size.'
         num_patches = image_size // patch_size
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
 
@@ -111,20 +113,21 @@ class myViT(nn.Module):
 
 v = myViT(
     image_size = 2048,
-    patch_size = 32,
-    num_classes = 10,
-    dim = 1024,
-    depth = 6,
-    heads = 16,
-    mlp_dim = 2048,
+    patch_size = 64,
+    num_classes = 4,
+    dim = 256,
+    depth = 5,
+    heads = 12,
+    mlp_dim = 512,
     dropout = 0.1,
     emb_dropout = 0.1
-)
+).to(device)
 
 # Initialize the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
 
-optimizer = torch.optim.SGD(v.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate)
+ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
@@ -138,7 +141,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        if batch % 2 == 0:
+        if batch % 5 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
@@ -159,7 +162,10 @@ def test_loop(dataloader, model, loss_fn):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 for t in range(epochs):
+    new_lr=ExpLR.get_last_lr()[0]
     print(f"Epoch {t+1}\n-------------------------------")
+    print(f'lr: {new_lr:>7e}')
     train_loop(train_dataloader, v, loss_fn, optimizer)
     test_loop(test_dataloader, v, loss_fn)
+    ExpLR.step()
 print("Done!")
