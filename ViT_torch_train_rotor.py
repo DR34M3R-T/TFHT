@@ -93,7 +93,7 @@ class myViT(nn.Module):
         )
 
     def forward(self, img):
-        print(img.size())
+        #print(img.size())
         x = self.to_patch_embedding(img)
         b, n, _ = x.shape
 
@@ -111,12 +111,12 @@ class myViT(nn.Module):
 
 v = myViT(
     image_size = 2048,
-    patch_size = 8,
+    patch_size = 32,
     num_classes = 10,
-    dim = 128,
-    depth = 4,
-    heads = 12,
-    mlp_dim = 256,
+    dim = 1024,
+    depth = 6,
+    heads = 16,
+    mlp_dim = 2048,
     dropout = 0.1,
     emb_dropout = 0.1
 )
@@ -138,7 +138,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        if batch % 100 == 0:
+        if batch % 2 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
