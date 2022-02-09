@@ -17,7 +17,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
 ssl._create_default_https_context = ssl._create_unverified_context
-learning_rate = 0.0001
+learning_rate = 0.0013
 batch_size = 64
 epochs = 15
 x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
@@ -127,7 +127,7 @@ v = myViT(
 loss_fn = torch.nn.CrossEntropyLoss()
 
 optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate)
-ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
+ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.55)
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
