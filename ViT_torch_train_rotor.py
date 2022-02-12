@@ -22,12 +22,6 @@ y_train = torch.from_numpy(np.load('./dataset/XJTU/yTrain.npy'))
 x_test = torch.from_numpy(np.load('./dataset/XJTU/xTest.npy'))
 y_test = torch.from_numpy(np.load('./dataset/XJTU/yTest.npy'))
 
-#fft
-x_train_FFT = torch.abs(torch.fft.fft(x_train))
-x_test_FFT = torch.abs(torch.fft.fft(x_test))
-x_train_FFT_p = torch.angle(torch.fft.fft(x_train))
-x_test_FFT_p = torch.angle(torch.fft.fft(x_test))
-
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
@@ -39,10 +33,15 @@ preprocess = transforms.Compose([
 
 class BearFaultDataset(Dataset):
     def __init__(self, inputs, targets, transform, reshape):
+        inputs_f=torch.abs(torch.fft.fft(inputs))
+        print(inputs.shape)
+        print(inputs_f.shape)
         if reshape:
-            self.inputs = inputs[:, :2025].reshape((-1, 45, 45))
+            '''这里还没写完qaq不过好像也没啥用'''
+            self.inputs = torch.cat(torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1))
+            self.inputs = self.inputs[:, :2025].reshape((-1, 45, 45))
         else:
-            self.inputs = inputs
+            self.inputs = torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
         self.targets = targets
         self.transform = transform
 
@@ -58,8 +57,8 @@ class BearFaultDataset(Dataset):
 
 # 实例化dataset
 isreshape = False
-training_data = BearFaultDataset(x_train_FFT, y_train, transform=preprocess, reshape=isreshape)
-test_data = BearFaultDataset(x_test_FFT, y_test, transform=preprocess, reshape=isreshape)
+training_data = BearFaultDataset(x_train, y_train, transform=preprocess, reshape=isreshape)
+test_data = BearFaultDataset(x_test, y_test, transform=preprocess, reshape=isreshape)
 print(training_data.inputs.shape, test_data.inputs.shape)
 # 定义dataloader
 batch_size = 64
@@ -71,15 +70,15 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 
 class myViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 2, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
         assert image_size % patch_size == 0 , 'Image dimensions must be divisible by the patch size.'
         num_patches = image_size // patch_size
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
-
+        patch_dim = channels * patch_size
         self.to_patch_embedding = nn.Sequential(
-            Rearrange('b (l p)-> b l p',p=patch_size),
-            nn.Linear(patch_size, dim),
+            Rearrange('b c (l p)-> b l (p c)',p=patch_size),
+            nn.Linear(patch_dim, dim),
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
@@ -115,7 +114,7 @@ class myViT(nn.Module):
 
 v = myViT(
     image_size = 2048,
-    patch_size = 32,
+    patch_size = 64,
     num_classes = 4,
     dim = 256,
     depth = 4,
@@ -123,7 +122,7 @@ v = myViT(
     mlp_dim = 512,
     dropout = 0.1,
     emb_dropout = 0.1
-).to(device)
+).to(device)#这里的训练强度可以小一点了
 
 # Initialize the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
