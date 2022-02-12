@@ -1,12 +1,10 @@
 import torch
 torch.set_default_tensor_type(torch.DoubleTensor)
 from torch import nn
-from torchvision import datasets
-from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader,Dataset
 from torchvision import transforms
-from vit_pytorch import ViT,Transformer
-from einops import rearrange, repeat
+from vit_pytorch import Transformer
+from einops import repeat
 from einops.layers.torch import Rearrange
 import numpy as np
 import ssl
@@ -17,14 +15,18 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
 ssl._create_default_https_context = ssl._create_unverified_context
-learning_rate = 0.0013
-batch_size = 64
+learning_rate = 0.0008
 epochs = 15
 x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
 y_train = torch.from_numpy(np.load('./dataset/XJTU/yTrain.npy'))
 x_test = torch.from_numpy(np.load('./dataset/XJTU/xTest.npy'))
 y_test = torch.from_numpy(np.load('./dataset/XJTU/yTest.npy'))
 
+#fft
+x_train_FFT = torch.abs(torch.fft.fft(x_train))
+x_test_FFT = torch.abs(torch.fft.fft(x_test))
+x_train_FFT_p = torch.angle(torch.fft.fft(x_train))
+x_test_FFT_p = torch.angle(torch.fft.fft(x_test))
 
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
@@ -56,8 +58,8 @@ class BearFaultDataset(Dataset):
 
 # 实例化dataset
 isreshape = False
-training_data = BearFaultDataset(x_train, y_train, transform=preprocess, reshape=isreshape)
-test_data = BearFaultDataset(x_test, y_test, transform=preprocess, reshape=isreshape)
+training_data = BearFaultDataset(x_train_FFT, y_train, transform=preprocess, reshape=isreshape)
+test_data = BearFaultDataset(x_test_FFT, y_test, transform=preprocess, reshape=isreshape)
 print(training_data.inputs.shape, test_data.inputs.shape)
 # 定义dataloader
 batch_size = 64
@@ -69,7 +71,7 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 
 class myViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 1, dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
         assert image_size % patch_size == 0 , 'Image dimensions must be divisible by the patch size.'
         num_patches = image_size // patch_size
@@ -113,11 +115,11 @@ class myViT(nn.Module):
 
 v = myViT(
     image_size = 2048,
-    patch_size = 64,
+    patch_size = 32,
     num_classes = 4,
     dim = 256,
-    depth = 5,
-    heads = 12,
+    depth = 4,
+    heads = 8,
     mlp_dim = 512,
     dropout = 0.1,
     emb_dropout = 0.1
@@ -127,7 +129,7 @@ v = myViT(
 loss_fn = torch.nn.CrossEntropyLoss()
 
 optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate)
-ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.55)
+ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
@@ -159,13 +161,22 @@ def test_loop(dataloader, model, loss_fn):
 
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(f"Test Error: \n Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f} \n")
+    return test_loss
 
+last_loss=100
+now_loss=100
 for t in range(epochs):
     new_lr=ExpLR.get_last_lr()[0]
     print(f"Epoch {t+1}\n-------------------------------")
     print(f'lr: {new_lr:>7e}')
     train_loop(train_dataloader, v, loss_fn, optimizer)
-    test_loop(test_dataloader, v, loss_fn)
-    ExpLR.step()
+    last_loss=now_loss
+    now_loss=test_loop(test_dataloader, v, loss_fn)
+    if last_loss/now_loss <0.7:
+        ExpLR.step()
+    if last_loss/now_loss <0.85:
+        ExpLR.step()
+    if last_loss/now_loss <1:
+        ExpLR.step()
 print("Done!")
