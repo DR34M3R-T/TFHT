@@ -7,14 +7,12 @@ from vit_pytorch import Transformer
 from einops import repeat
 from einops.layers.torch import Rearrange
 import numpy as np
-import ssl
 
 # 设定训练用的设备
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # 打印看一下
 print("Using {} device".format(device))
 
-ssl._create_default_https_context = ssl._create_unverified_context
 learning_rate = 0.0008
 epochs = 15
 x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
@@ -34,8 +32,10 @@ preprocess = transforms.Compose([
 class BearFaultDataset(Dataset):
     def __init__(self, inputs, targets, transform, reshape):
         inputs_f=torch.abs(torch.fft.fft(inputs))
-        print(inputs.shape)
-        print(inputs_f.shape)
+        #inputs_f/=len(inputs_f[0])/2
+        #inputs_f[0]/=2
+        #print(inputs.shape)
+        #print(inputs_f.shape)
         if reshape:
             '''这里还没写完qaq不过好像也没啥用'''
             self.inputs = torch.cat(torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1))
@@ -59,16 +59,13 @@ class BearFaultDataset(Dataset):
 isreshape = False
 training_data = BearFaultDataset(x_train, y_train, transform=preprocess, reshape=isreshape)
 test_data = BearFaultDataset(x_test, y_test, transform=preprocess, reshape=isreshape)
-print(training_data.inputs.shape, test_data.inputs.shape)
+# print(training_data.inputs.shape, test_data.inputs.shape)
 # 定义dataloader
 batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 #ViT
-
-
-
 class myViT(nn.Module):
     def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 2, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
@@ -116,13 +113,13 @@ v = myViT(
     image_size = 2048,
     patch_size = 64,
     num_classes = 4,
-    dim = 256,
-    depth = 4,
-    heads = 8,
-    mlp_dim = 512,
+    dim = 64,
+    depth = 2,
+    heads = 4,
+    mlp_dim = 128,
     dropout = 0.1,
     emb_dropout = 0.1
-).to(device)#这里的训练强度可以小一点了
+).to(device)#这里的训练强度已经减小了
 
 # Initialize the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
@@ -172,6 +169,7 @@ for t in range(epochs):
     train_loop(train_dataloader, v, loss_fn, optimizer)
     last_loss=now_loss
     now_loss=test_loop(test_dataloader, v, loss_fn)
+    # 学习率动态衰减
     if last_loss/now_loss <0.7:
         ExpLR.step()
     if last_loss/now_loss <0.85:
