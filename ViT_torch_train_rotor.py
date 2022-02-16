@@ -138,6 +138,6 @@ torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 nb_param = 0
 for param in v.parameters():
     nb_param += np.prod(list(param.data.size()))
-for param in v.parameters():
-    print(type(param.data), param.size())
+#for param in v.parameters():
+#    print(type(param.data), param.size())
 print('Number of parameters:', nb_param)

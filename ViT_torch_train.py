@@ -5,9 +5,9 @@ from torch.utils.data import DataLoader
 from vit_pytorch import ViT
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
-learning_rate = 1e-3
+learning_rate = 0.0005
 batch_size = 64
-epochs = 5
+epochs = 15
 
 train_data=datasets.CIFAR10(
     root="dataset\\cifar",
@@ -28,11 +28,11 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 v = ViT(
     image_size = 32,
-    patch_size = 8,
+    patch_size = 32,
     num_classes = 10,
     dim = 128,
-    depth = 4,
-    heads = 12,
+    depth = 2,
+    heads = 4,
     mlp_dim = 256,
     dropout = 0.1,
     emb_dropout = 0.1
@@ -41,7 +41,8 @@ v = ViT(
 # Initialize the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
 
-optimizer = torch.optim.SGD(v.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate) #定义优化器
+ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.98) #绑定衰减学习率到优化器
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
@@ -79,4 +80,5 @@ for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train_loop(train_dataloader, v, loss_fn, optimizer)
     test_loop(test_dataloader, v, loss_fn)
+    ExpLR.step()
 print("Done!")
