@@ -131,7 +131,7 @@ for t in range(epochs): # 开始训练
         ExpLR.step()
 print("Done!")
 
-torch.save(v, './result/ViT-pretrained-net.pt') # 保存训练的模型
+torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 
 
 # 显示参数数量
