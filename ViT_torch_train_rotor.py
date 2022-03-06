@@ -1,9 +1,14 @@
+from pyexpat import features
+from sklearn.metrics import label_ranking_average_precision_score
 import torch
 torch.set_default_tensor_type(torch.DoubleTensor)
 from torch.utils.data import DataLoader,Dataset
 from torchvision import transforms
 import numpy as np
 import MyViT
+from sklearn.manifold import TSNE
+import tsne
+import matplotlib.pyplot as plt
 
 # 设定训练用的设备
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -79,34 +84,64 @@ loss_fn = torch.nn.CrossEntropyLoss()
 learning_rate = 0.0008 #定义学习率
 optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate) #定义优化器
 ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8) #绑定衰减学习率到优化器
+data_g,label_g=(0,0)
+def draw_tsne(data, label, draw):
+    label=label+1
+    #data1=torch.transpose(data,0,1)
+    n_samples, n_features = data.shape
+    data=data.detach().numpy()
+    global data_g,label_g
+    if isinstance(data_g,int):
+        data_g=data
+        label_g=label
+    else:
+        data=np.vstack((data_g,data))
+        label=np.hstack((label_g,label))
+        data_g,label_g=data,label
+    if draw:
+        ts = TSNE(n_components=2, init='pca', random_state=0)
+	    # t-SNE降维
+        reslut = ts.fit_transform(data)
+	    # 调用函数，绘制图像
+        fig = tsne.plot_embedding(reslut, label, 't-SNE Embedding of digits')
+	    # 显示图像
+        plt.show()
 
 # 定义训练循环
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
-        pred = model(X)
+        pred,features = model(X)
         loss = loss_fn(pred, y)
-
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        if batch % 5 == 0:
+        draw=False
+        if batch % 10 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            draw=True
+        draw_tsne(features,y,draw)
+        draw=False
 # 定义测试循环
 def test_loop(dataloader, model, loss_fn):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
-
+    num=0
     with torch.no_grad():
         for X, y in dataloader:
-            pred = model(X)
+            num+=1
+            pred,features = model(X)
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            draw=False
+            if num%10==0:
+                draw=True
+            draw_tsne(features,y,draw)
+            draw=False
 
     test_loss /= num_batches
     correct /= size
@@ -116,10 +151,14 @@ def test_loop(dataloader, model, loss_fn):
 last_loss=100
 now_loss=100
 for t in range(epochs): # 开始训练
+    label_g=0
+    data_g=0
     new_lr=ExpLR.get_last_lr()[0]
     print(f"Epoch {t+1}\n-------------------------------")
     print(f'lr: {new_lr:>7e}')
     train_loop(train_dataloader, v, loss_fn, optimizer)
+    label_g=0
+    data_g=0
     last_loss=now_loss
     now_loss=test_loop(test_dataloader, v, loss_fn)
     # 学习率动态衰减
