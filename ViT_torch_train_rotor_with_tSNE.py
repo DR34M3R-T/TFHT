@@ -99,6 +99,13 @@ def draw_tsne(data, label, draw):
         label=np.hstack((label_g,label))
         data_g,label_g=data,label
     if draw:
+        size=len(data)
+        gap=size//(2*n_samples)
+        if gap == 0:
+            gap=1
+            n_samples=32
+        data=[data[i*gap] for i in range(n_samples*2-1)]
+        label=[label[i*gap] for i in range(n_samples*2-1)]
         ts = TSNE(n_components=2, init='pca', random_state=0)
 	    # t-SNE降维
         reslut = ts.fit_transform(data)
