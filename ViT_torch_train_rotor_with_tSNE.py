@@ -5,7 +5,7 @@ torch.set_default_tensor_type(torch.DoubleTensor)
 from torch.utils.data import DataLoader,Dataset
 from torchvision import transforms
 import numpy as np
-import MyViT
+import MyViTWithtsne
 from sklearn.manifold import TSNE
 import tsne
 import matplotlib.pyplot as plt
@@ -62,7 +62,7 @@ batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-v = MyViT.ViT( #定义ViT模型
+v = MyViTWithtsne.ViT( #定义ViT模型
     image_size = 2048,
     patch_size = 64,
     num_classes = 4,
