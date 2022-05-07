@@ -1,0 +1,135 @@
+torch.Size([2800, 2048]) torch.Size([1200, 2048])
+Using cpu device
+Training Times 1
+
+Epoch 1
+-------------------------------
+loss: 1.478682  [    0/ 2800]
+loss: 1.187733  [  640/ 2800]
+loss: 1.067789  [ 1280/ 2800]
+loss: 0.958963  [ 1920/ 2800]
+loss: 0.894476  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 71.3%, Avg loss: 0.013971, Total loss: 39.119686 
+
+Test Error: 
+ Accuracy: 68.6%, Avg loss: 0.014111, Total loss: 16.933229 
+
+Epoch 2
+-------------------------------
+loss: 0.920334  [    0/ 2800]
+loss: 0.705332  [  640/ 2800]
+loss: 0.708480  [ 1280/ 2800]
+loss: 0.558891  [ 1920/ 2800]
+loss: 0.525345  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 93.9%, Avg loss: 0.006080, Total loss: 17.023586 
+
+Test Error: 
+ Accuracy: 91.4%, Avg loss: 0.006536, Total loss: 7.843047 
+
+Epoch 3
+-------------------------------
+loss: 0.342666  [    0/ 2800]
+loss: 0.240208  [  640/ 2800]
+loss: 0.182562  [ 1280/ 2800]
+loss: 0.126677  [ 1920/ 2800]
+loss: 0.108661  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 99.9%, Avg loss: 0.001015, Total loss: 2.841027 
+
+Test Error: 
+ Accuracy: 99.5%, Avg loss: 0.001323, Total loss: 1.587790 
+
+Epoch 4
+-------------------------------
+loss: 0.095351  [    0/ 2800]
+loss: 0.078183  [  640/ 2800]
+loss: 0.047472  [ 1280/ 2800]
+loss: 0.045037  [ 1920/ 2800]
+loss: 0.034143  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000345, Total loss: 0.967058 
+
+Test Error: 
+ Accuracy: 99.9%, Avg loss: 0.000533, Total loss: 0.640196 
+
+Epoch 5
+-------------------------------
+loss: 0.027240  [    0/ 2800]
+loss: 0.018428  [  640/ 2800]
+loss: 0.029774  [ 1280/ 2800]
+loss: 0.019608  [ 1920/ 2800]
+loss: 0.015161  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000179, Total loss: 0.500942 
+
+Test Error: 
+ Accuracy: 100.0%, Avg loss: 0.000312, Total loss: 0.373934 
+
+Epoch 6
+-------------------------------
+loss: 0.010821  [    0/ 2800]
+loss: 0.014620  [  640/ 2800]
+loss: 0.010119  [ 1280/ 2800]
+loss: 0.008722  [ 1920/ 2800]
+loss: 0.011954  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000103, Total loss: 0.288171 
+
+Test Error: 
+ Accuracy: 100.0%, Avg loss: 0.000200, Total loss: 0.239614 
+
+Epoch 7
+-------------------------------
+loss: 0.006707  [    0/ 2800]
+loss: 0.007100  [  640/ 2800]
+loss: 0.006199  [ 1280/ 2800]
+loss: 0.011163  [ 1920/ 2800]
+loss: 0.004970  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000072, Total loss: 0.201886 
+
+Test Error: 
+ Accuracy: 100.0%, Avg loss: 0.000154, Total loss: 0.184890 
+
+Epoch 8
+-------------------------------
+loss: 0.004976  [    0/ 2800]
+loss: 0.004909  [  640/ 2800]
+loss: 0.005564  [ 1280/ 2800]
+loss: 0.004926  [ 1920/ 2800]
+loss: 0.004358  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000051, Total loss: 0.143432 
+
+Test Error: 
+ Accuracy: 100.0%, Avg loss: 0.000112, Total loss: 0.134328 
+
+Epoch 9
+-------------------------------
+loss: 0.006231  [    0/ 2800]
+loss: 0.003590  [  640/ 2800]
+loss: 0.003226  [ 1280/ 2800]
+loss: 0.004290  [ 1920/ 2800]
+loss: 0.003705  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000038, Total loss: 0.107066 
+
+Test Error: 
+ Accuracy: 100.0%, Avg loss: 0.000093, Total loss: 0.112184 
+
+Epoch 10
+-------------------------------
+loss: 0.002927  [    0/ 2800]
+loss: 0.004481  [  640/ 2800]
+loss: 0.002393  [ 1280/ 2800]
+loss: 0.002634  [ 1920/ 2800]
+loss: 0.002623  [ 2560/ 2800]
+Train Error: 
+ Accuracy: 100.0%, Avg loss: 0.000030, Total loss: 0.083746 
+
+Test Error: 
+ Accuracy: 100.0%, Avg loss: 0.000078, Total loss: 0.093235 
+
+Done!
