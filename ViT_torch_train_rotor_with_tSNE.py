@@ -85,7 +85,7 @@ learning_rate = 0.0008 #定义学习率
 optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate) #定义优化器
 ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8) #绑定衰减学习率到优化器
 data_g,label_g=(0,0)
-def draw_tsne(data, label, draw):
+def draw_tsne(data, label, draw, suffix):
     label=label+1
     #data1=torch.transpose(data,0,1)
     n_samples, n_features = data.shape
@@ -99,6 +99,8 @@ def draw_tsne(data, label, draw):
         label=np.hstack((label_g,label))
         data_g,label_g=data,label
     if draw:
+        '''
+        #等距抽样
         size=len(data)
         gap=size//(2*n_samples)
         if gap == 0:
@@ -106,16 +108,17 @@ def draw_tsne(data, label, draw):
             n_samples=32
         data=[data[i*gap] for i in range(n_samples*2-1)]
         label=[label[i*gap] for i in range(n_samples*2-1)]
+        '''
         ts = TSNE(n_components=2, init='pca', random_state=0)
 	    # t-SNE降维
         reslut = ts.fit_transform(data)
 	    # 调用函数，绘制图像
-        fig = tsne.plot_embedding(reslut, label, 't-SNE Embedding of digits')
+        fig = tsne.plot_embedding(reslut, label, 't-SNE Features Embedding')
 	    # 显示图像
-        plt.show()
+        plt.savefig('pics/tsne/tsne{}.png'.format(suffix))
 
 # 定义训练循环
-def train_loop(dataloader, model, loss_fn, optimizer):
+def train_loop(dataloader, model, loss_fn, optimizer, epoches):
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
@@ -126,14 +129,15 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
         draw=False
-        if batch % 10 == 0:
+        if batch % 5 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
             draw=True
-        draw_tsne(features,y,draw)
+        suffix = "_train_{}_{}".format(epoches,batch)
+        draw_tsne(features,y,draw,suffix)
         draw=False
 # 定义测试循环
-def test_loop(dataloader, model, loss_fn):
+def test_loop(dataloader, model, loss_fn, epoches):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
@@ -147,7 +151,8 @@ def test_loop(dataloader, model, loss_fn):
             draw=False
             if num%10==0:
                 draw=True
-            draw_tsne(features,y,draw)
+            suffix = "_test_{}".format(epoches)
+            draw_tsne(features,y,draw,suffix)
             draw=False
 
     test_loss /= num_batches
@@ -163,11 +168,11 @@ for t in range(epochs): # 开始训练
     new_lr=ExpLR.get_last_lr()[0]
     print(f"Epoch {t+1}\n-------------------------------")
     print(f'lr: {new_lr:>7e}')
-    train_loop(train_dataloader, v, loss_fn, optimizer)
+    train_loop(train_dataloader, v, loss_fn, optimizer, t)
     label_g=0
     data_g=0
     last_loss=now_loss
-    now_loss=test_loop(test_dataloader, v, loss_fn)
+    now_loss=test_loop(test_dataloader, v, loss_fn, t)
     # 学习率动态衰减
     if last_loss/now_loss <0.7:
         ExpLR.step()
