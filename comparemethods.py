@@ -1,3 +1,4 @@
+from re import T
 import torch
 from torch import nn
 torch.set_default_tensor_type(torch.FloatTensor)
@@ -5,6 +6,11 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import numpy as np
 from torch.optim.lr_scheduler import StepLR
+import MyViTWithtsne
+from sklearn.manifold import TSNE
+import tsne
+import matplotlib.pyplot as plt
+
 
 # 读入excel数据以及保存部分，MFPT数据集
 # df = pd.read_excel('./data/MFPTdataset.xlsx', header=None)
@@ -42,6 +48,32 @@ preprocess = transforms.Compose([
     transforms.ToTensor(),
     # transforms.Normalize(mean=0, std=1)
 ])
+data_g,label_g=(0,0)
+def draw_tsne(data, label, draw, suffix):
+    label=label+1
+    #data1=torch.transpose(data,0,1)
+    n_samples, n_features = data.shape
+    data=data.detach().numpy()
+    global data_g,label_g
+    if isinstance(data_g,int):
+        data_g=data
+        label_g=label
+    else:
+        data=np.vstack((data_g,data))
+        label=np.hstack((label_g,label))
+        data_g,label_g=data,label
+    if draw:
+        ts = TSNE(n_components=2, init='pca', random_state=0)
+	    # t-SNE降维
+        reslut = ts.fit_transform(data)
+	    # 调用函数，绘制图像
+        fig = tsne.plot_embedding(reslut, label, 't-SNE Features Embedding')
+	    # 显示图像
+        plt.savefig('pics/tsnecnn/tsne{}.png'.format(suffix))
+
+
+
+
 
 class BearFaultDataset(Dataset):
     def __init__(self, inputs, targets, transform, reshape):
@@ -72,37 +104,54 @@ batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-def train(dataloader, model, loss_fn, optimizer):
+def train(dataloader, model, loss_fn, optimizer,epoches):
     model.train()
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.float().to(device), y.long().to(device)
 
         # Compute prediction error
-        pred, _ = model(X)
+        pred, _ ,features= model(X)
         loss = loss_fn(pred, y)
 
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+        draw = False
         if batch % 10 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            draw = True
+
+        suffix = "_train_{}_{}".format(epoches,batch)
+        draw_tsne(features,y,draw,suffix)
+        draw=False
 
 
-def test(dataloader, model, loss_fn, train=False):
+
+def test(epoches,dataloader, model, loss_fn, train=False):
     size = len(dataloader.dataset)
     model.eval()
     test_loss, correct = 0, 0
+    num = 0
     with torch.no_grad():
         for X, y in dataloader:
             X, y = X.float().to(device), y.long().to(device)
-            pred, _ = model(X)
+            num += 1
+            pred, _ ,features= model(X)
             loss = loss_fn(pred, y)
             test_loss += loss.item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            draw=False
+            if num%10==0:
+                draw=True
+            suffix = "_test_{}".format(epoches)
+            draw_tsne(features,y,draw,suffix)
+            draw=False
+
+   
+   
     avg_test_loss = test_loss / size
     correct /= size
     if train:
@@ -192,7 +241,7 @@ class MyCNN1D(nn.Module):
         x = self.conv(x)
         x = self.flatten(x)
         features = self.to_latent(x)
-        return self.out(features), features
+        return self.out(features), features, self.out(features)
 
 
 epochs = 10
@@ -213,12 +262,16 @@ for times in range(1, 2, 1):
     test_loss_list, test_acc_list = [], []
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
-        train(train_dataloader, model, loss_fn, optimizer)
+        label_g=0
+        data_g=0
+        train(train_dataloader, model, loss_fn, optimizer,t)
         # scheduler.step()
-        train_loss, train_acc = test(train_dataloader, model, loss_fn, train=True)
+        '''train_loss, train_acc = test(t,train_dataloader, model, loss_fn, train=True)
         train_loss_list.append(train_loss)
-        train_acc_list.append(train_acc)
-        test_loss, test_acc = test(test_dataloader, model, loss_fn, train=False)
+        train_acc_list.append(train_acc)'''
+        label_g=0
+        data_g=0
+        test_loss, test_acc = test(t,test_dataloader, model, loss_fn, train=False)
         test_loss_list.append(test_loss)
         test_acc_list.append(test_acc)
     print("Done!")
