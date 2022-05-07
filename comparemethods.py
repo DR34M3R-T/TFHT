@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+torch.set_default_tensor_type(torch.FloatTensor)
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import numpy as np
