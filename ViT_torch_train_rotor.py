@@ -5,6 +5,7 @@ from torchvision import transforms
 import numpy as np
 import MyViT
 
+
 # 设定训练用的设备
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # 打印看一下
@@ -68,7 +69,7 @@ v = MyViT.ViT( #定义ViT模型
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
-epochs = 2 #定义训练轮数
+epochs = 10 #定义训练轮数
 
 # 加载模型
 # v=torch.load('./result/ViT-pretrained-net.pt')
@@ -93,7 +94,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        if batch % 5 == 0:
+        if batch % 10 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 # 定义测试循环
