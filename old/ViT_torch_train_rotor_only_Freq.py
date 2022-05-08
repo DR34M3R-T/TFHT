@@ -8,6 +8,10 @@ from einops import repeat
 from einops.layers.torch import Rearrange
 import numpy as np
 import ssl
+import time
+
+#计时器
+start = time.perf_counter()
 
 # 设定训练用的设备
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -16,7 +20,7 @@ print("Using {} device".format(device))
 
 ssl._create_default_https_context = ssl._create_unverified_context
 learning_rate = 0.0008
-epochs = 15
+epochs = 6
 x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
 y_train = torch.from_numpy(np.load('./dataset/XJTU/yTrain.npy'))
 x_test = torch.from_numpy(np.load('./dataset/XJTU/xTest.npy'))
@@ -117,10 +121,10 @@ v = myViT(
     image_size = 2048,
     patch_size = 32,
     num_classes = 4,
-    dim = 256,
-    depth = 4,
-    heads = 6,
-    mlp_dim = 128,
+    dim = 128,
+    depth = 2,
+    heads = 4,
+    mlp_dim = 64,
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)
@@ -132,8 +136,13 @@ optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate)
 ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
 def train_loop(dataloader, model, loss_fn, optimizer):
+
+    #计时起点
+    start = time.perf_counter()
+
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
+
         # Compute prediction and loss
         pred = model(X)
         loss = loss_fn(pred, y)
@@ -147,11 +156,19 @@ def train_loop(dataloader, model, loss_fn, optimizer):
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
+    #计时结束
+    dur = time.perf_counter() - start
+    print("用时{:.2f}s\n".format(dur))
 
 def test_loop(dataloader, model, loss_fn):
+
+    #计时起点
+    start = time.perf_counter()
+
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
+
 
     with torch.no_grad():
         for X, y in dataloader:
@@ -162,6 +179,12 @@ def test_loop(dataloader, model, loss_fn):
     test_loss /= num_batches
     correct /= size
     print(f"Test Error: \n Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f} \n")
+
+
+    #计时结束
+    dur = time.perf_counter() - start
+    print("用时{:.2f}s\n".format(dur))
+
     return test_loss
 
 last_loss=100
@@ -180,3 +203,104 @@ for t in range(epochs):
     if last_loss/now_loss <1:
         ExpLR.step()
 print("Done!")
+
+'''image_size = 2048,
+    patch_size = 32,
+    num_classes = 4,
+    dim = 256,
+    depth = 4,
+    heads = 6,
+    mlp_dim = 128,
+    dropout = 0.1,
+    emb_dropout = 0.1
+
+    97.083'''
+
+
+'''    image_size = 2048,
+    patch_size = 16,
+    num_classes = 4,
+    dim = 256,
+    depth = 4,
+    heads = 6,
+    mlp_dim = 128,
+    dropout = 0.1,
+    emb_dropout = 0.1
+
+
+    93
+'''
+
+
+'''    image_size = 2048,
+    patch_size = 16,
+    num_classes = 4,
+    dim = 128,
+    depth = 4,
+    heads = 6,
+    mlp_dim = 128,
+    dropout = 0.1,
+    emb_dropout = 0.1
+
+90.583'''
+
+'''    image_size = 2048,
+    patch_size = 16,
+    num_classes = 4,
+    dim = 64,
+    depth = 4,
+    heads = 6,
+    mlp_dim = 128,
+    dropout = 0.1,
+    emb_dropout = 0.1
+47s
+91.5'''
+
+'''    image_size = 2048,
+    patch_size = 16,
+    num_classes = 4,
+    dim = 64,
+    depth = 4,
+    heads = 6,
+    mlp_dim = 64,
+    dropout = 0.1,
+    emb_dropout = 0.1
+43s
+64.333'''
+
+'''    image_size = 2048,
+    patch_size = 16,
+    num_classes = 4,
+    dim = 128,
+    depth = 4,
+    heads = 6,
+    mlp_dim = 64,
+    dropout = 0.1,
+    emb_dropout = 0.1
+56s
+93.833'''
+
+'''    image_size = 2048,
+    patch_size = 16,
+    num_classes = 4,
+    dim = 128,
+    depth = 2,
+    heads = 4,
+    mlp_dim = 64,
+    dropout = 0.1,
+    emb_dropout = 0.1
+95.7
+21s
+'''
+
+'''    image_size = 2048,
+    patch_size = 32,
+    num_classes = 4,
+    dim = 128,
+    depth = 2,
+    heads = 4,
+    mlp_dim = 64,
+    dropout = 0.1,
+    emb_dropout = 0.1
+94
+9s'''
