@@ -1,4 +1,3 @@
-from re import T
 import torch
 from torch import nn
 torch.set_default_tensor_type(torch.FloatTensor)
