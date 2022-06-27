@@ -1,6 +1,6 @@
 from tkinter import *
 import os
-from turtle import width
+from matloader import *
 
 def get_file_list():
     filepath = entry_input_path.get()
@@ -15,6 +15,11 @@ def get_file_list():
     for item in files:
         list_files.insert(0,item)
 
+def write_npy():
+    filename = list_files.get(ACTIVE)
+    path = entry_input_path.get()
+    matloader(filename,path)
+    pass
 
 root = Tk()
 root.geometry('450x300')
@@ -23,7 +28,7 @@ root.geometry('450x300')
 frame_paths = Frame(root)
 lable_input = Label(frame_paths,text="输入目录")
 entry_input_path = Entry(frame_paths,width=40)
-entry_input_path.insert(0,r".\dataset\normal")
+entry_input_path.insert(0,"dataset/12k_fan_end")
 button_input_select = Button(frame_paths,text="...")
 
 lable_input.grid(row=0,column=0)
@@ -32,7 +37,7 @@ button_input_select.grid(row=0,column=2)
 
 lable_output = Label(frame_paths,text="输入目录")
 entry_output_path = Entry(frame_paths,width=40)
-entry_output_path.insert(0,r".\dataset\CWRU\dataset.npy")
+entry_output_path.insert(0,"dataset/CWRU/dataset.npy")
 button_output_select = Button(frame_paths,text="...")
 
 lable_output.grid(row=1,column=0)
@@ -51,11 +56,11 @@ button_load.grid(row=2,column=1)
 
 frame_files.pack()
 
-button_load_certain_file = Button(frame_files,text="加载文件")
+button_load_certain_file = Button(frame_files,text="加载文件",command=write_npy)
 button_load_certain_file.pack()
 
 ## read files
-
+frame_matinfo = Frame(root)
 
 
 root.mainloop()                 # 进入消息循环
