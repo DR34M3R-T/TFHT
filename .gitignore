@@ -1,8 +1,5 @@
 /.vscode/
-/transformer/
-/ViT0/
 /result/
-/dataset/cifar/
 /__pycache__/
 /old/__pycache__/
 /dataset/
