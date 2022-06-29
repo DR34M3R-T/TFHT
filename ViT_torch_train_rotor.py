@@ -62,10 +62,10 @@ v = MyViT.ViT( #定义ViT模型
     image_size = 2048,
     patch_size = 64,
     num_classes = 4,
-    dim = 64,
-    depth = 2,
-    heads = 4,
-    mlp_dim = 128,
+    dim = 256,
+    depth = 4,
+    heads = 20,
+    mlp_dim = 512,
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
@@ -85,6 +85,8 @@ ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8) #绑定衰�
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
+        X=X.to(device)
+        y=y.to(device)
         # Compute prediction and loss
         pred = model(X)
         loss = loss_fn(pred, y)
@@ -105,6 +107,8 @@ def test_loop(dataloader, model, loss_fn):
 
     with torch.no_grad():
         for X, y in dataloader:
+            X=X.to(device)
+            y=y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
