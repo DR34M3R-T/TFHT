@@ -69,7 +69,7 @@ v = MyViT.ViT( #定义ViT模型
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
-epochs = 10 #定义训练轮数
+epochs = 1 #定义训练轮数
 
 # 加载模型
 # v=torch.load('./result/ViT-pretrained-net.pt')
@@ -143,6 +143,6 @@ torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 nb_param = 0
 for param in v.parameters():
     nb_param += np.prod(list(param.data.size()))
+    print(param.names,type(param.data), param.size())
 #for param in v.parameters():
-#    print(type(param.data), param.size())
 print('Number of parameters:', nb_param)

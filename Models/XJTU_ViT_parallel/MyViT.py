@@ -14,19 +14,26 @@ class ViT(nn.Module):
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
         patch_dim = patch_size
         self.path_num = path_num
-        self.paralleler = nn.Sequential(
-            Rearrange('b c l-> c b l'),
-        )
-        self.to_patch_embedding = nn.Sequential(
-            Rearrange('b (l p)-> b l p',p=patch_size),
-            nn.Linear(patch_dim, dim),
-        )
+        
+        self.to_patch_embedding = nn.ModuleList([
+            nn.Sequential(
+                Rearrange('b (l p)-> b l p',p=patch_size),
+                nn.Linear(patch_dim, dim),
+            ) for i in range(self.path_num)])
 
-        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
-        self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
-        self.dropout = nn.Dropout(emb_dropout)
+        self.pos_embedding = nn.ParameterList([
+            nn.Parameter(torch.randn(1, num_patches + 1, dim))
+            for i in range(self.path_num)])
+        self.cls_token = nn.ParameterList([
+            nn.Parameter(torch.randn(1, 1, dim))
+            for i in range(self.path_num)])
+        self.dropout = nn.ModuleList([
+            nn.Dropout(emb_dropout)
+            for i in range(self.path_num)])
 
-        self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, dropout)
+        self.transformer = nn.ModuleList([
+            Transformer(dim, depth, heads, dim_head, mlp_dim, dropout)
+            for i in range(self.path_num)])
 
         self.pool = pool
         self.to_latent = nn.Identity()
@@ -37,18 +44,17 @@ class ViT(nn.Module):
 
     def forward(self, img):
         #print(img.size())
-        img = self.paralleler(img)
         x=['',''];
         for i in range(self.path_num):
-            x[i] = self.to_patch_embedding(img[i])
+            x[i] = self.to_patch_embedding[i](img[:,i])
             b, n, _ = x[i].shape
 
-            cls_tokens = repeat(self.cls_token, '() n d -> b n d', b = b)
+            cls_tokens = repeat(self.cls_token[i], '() n d -> b n d', b = b)
             x[i] = torch.cat((cls_tokens, x[i]), dim=1)
-            x[i] += self.pos_embedding[:, :(n + 1)]
-            x[i] = self.dropout(x[i])
+            x[i] += self.pos_embedding[i][:, :(n + 1)]
+            x[i] = self.dropout[i](x[i])
 
-            x[i] = self.transformer(x[i])
+            x[i] = self.transformer[i](x[i])
 
             x[i] = x[i].mean(dim = 1) if self.pool == 'mean' else x[i][:, 0]
         x_total = torch.cat((x[0],x[1]),dim=1)
