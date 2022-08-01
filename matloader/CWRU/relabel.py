@@ -34,6 +34,6 @@ channel_values = np.unique(channel_tmp)
 no_BA = np.greater(channel_tmp,0)
 no_FE = np.greater(channel_tmp,2)
 
-relabel = np.swapaxes(np.vstack((fault_type,position,diameter,outer_position,rpm,no_BA,no_FE)),0,1)
+relabel = np.swapaxes(np.vstack((fault_type,position,diameter,outer_position,rpm_fitted,no_BA,no_FE)),0,1)
 np.save('dataset/CWRU/relabel.npy',relabel)
 pass
