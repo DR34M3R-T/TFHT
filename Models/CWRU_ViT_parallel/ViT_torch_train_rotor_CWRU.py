@@ -11,10 +11,36 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # 打印看一下
 print("Using {} device".format(device))
 
+FullChannel=True
+IgnoreNormal=False
+
 # 导入raw数据集
+label_name='p4.npy'
 data = torch.from_numpy(np.load('./dataset/CWRU/data.npy')) #7253 3 2048
-label = torch.from_numpy(np.load('./dataset/CWRU/relabel.npy')) #7253 7
-rand_arr = np.random.randint(low=0, high=9, size=(7253))
+label = torch.from_numpy(np.load('./dataset/CWRU/'+label_name)) #7253
+label = label.type(torch.LongTensor)
+print("In train:{}.".format(label_name))
+
+print("Full Channel" if FullChannel else "One Channel")
+data=data[label!=-1]
+label=label[label!=-1]
+if FullChannel: #去除缺通道的正常数据
+    print("No Normal and other channel-missing data.")
+    data=data[label!=0]
+    label=label[label!=0]-1
+    data=data[label<100]
+    label=label[label<100]
+else:
+    print("No Normal data." if IgnoreNormal else "With Normal data.")
+    if IgnoreNormal:
+        data=data[label!=0]
+        label=label[label!=0]-1
+    label[label>=100]-=100
+class_num = torch.unique(label).shape[0]
+print("Nunber of classes:{}.".format(class_num))
+
+
+rand_arr = np.random.randint(low=0, high=10, size=data.shape[0])
 rand_arr = torch.from_numpy(np.bool_(np.clip(rand_arr,2,3)-2))
 data_train = data[rand_arr==1]
 label_train = label[rand_arr==1]
@@ -28,7 +54,8 @@ preprocess = transforms.Compose([
 ])
 class BearFaultDataset(Dataset):
     def __init__(self, inputs, targets, transform, reshape):
-        #inputs =torch.squeeze(torch.split(inputs,1,1)[1],1)
+        if not FullChannel:
+            inputs = torch.split(inputs,1,1)[1]
         inputs_f=torch.abs(torch.fft.fft(inputs))
         #inputs_f/=len(inputs_f[0])/2
         #inputs_f[0]/=2
@@ -40,9 +67,7 @@ class BearFaultDataset(Dataset):
             self.inputs = self.inputs[:, :2025].reshape((-1, 45, 45))
         else:
             self.inputs = torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
-        target_tmp = torch.split(targets,1,1)
-        self.targets_position = torch.clip(torch.squeeze(target_tmp[0],1)*3+torch.squeeze(target_tmp[1],1)-3,0)
-        self.targets = self.targets_position
+        self.targets = targets
         values = torch.unique(self.targets)
         self.transform = transform
 
@@ -66,18 +91,21 @@ batch_size = 64
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
+ViT_Channels=3 if FullChannel else 1
+print("Nunber of ViT channels:{}.".format(ViT_Channels))
 v = MyViT_CWRU.ViT( #定义ViT模型
     image_size = 2048,
     patch_size = 64,
-    num_classes = 7,
+    channels=ViT_Channels,
+    num_classes = class_num,
     dim = 64,
-    depth = 3,
-    heads = 6,
+    depth = 2,
+    heads = 4,
     mlp_dim = 128,
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
-epochs = 10 #定义训练轮数
+epochs = 1 #定义训练轮数
 
 # 加载模型
 # v=torch.load('./result/ViT-pretrained-net.pt')
