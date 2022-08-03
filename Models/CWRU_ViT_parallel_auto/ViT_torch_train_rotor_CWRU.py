@@ -6,11 +6,12 @@ import numpy as np
 import MyViT_CWRU
 import logging
 import scipy.io
+from Toolbox.mkdir import mkdir
 
 def auto_train(argvs,times):
     (label_name, FullChannel, 
     IgnoreNormal, batch_size, patch_size, 
-    dim, depth, head, dim_head, mlp_dim) = argvs
+    dim, depth, head, dim_head, mlp_dim, epochs) = argvs
     mat_info_dit = {}
     # 开始时间
     start_time=datetime.datetime.now()
@@ -20,7 +21,7 @@ def auto_train(argvs,times):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     mat_info_dit['repeat_times']=times
     mat_info_dit['start']=str(start_time)
-    mat_info_dit['epoches']=[]
+    mat_info_dit['epochs']=[]
 
     # FullChannel=False
     # IgnoreNormal=False
@@ -62,7 +63,7 @@ def auto_train(argvs,times):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    fh = logging.FileHandler(filename='./result/CWRU/{}'.format(logname), mode='a', encoding="utf-8", delay=False)
+    fh = logging.FileHandler(filename='./result/CWRU/{}'.format(logname), mode='w+', encoding="utf-8", delay=False)
     fmt = logging.Formatter("[%(asctime)s] %(message)s")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(fmt=fmt)
@@ -147,7 +148,7 @@ def auto_train(argvs,times):
         dropout = 0.1,
         emb_dropout = 0.1
     ).to(device)#这里的训练强度已经减小了
-    epochs = 3 #定义训练轮数
+    logger.info(f"Totol epochs: {epochs}")
 
     # 加载模型
     # v=torch.load('./result/ViT-pretrained-net.pt')
@@ -210,13 +211,13 @@ def auto_train(argvs,times):
         now_loss, test_acc=test_loop(test_dataloader, v, loss_fn)
 
         # 数据写入字典
-        epoches_dict = {
+        epochs_dict = {
             "epoch": t+1,
             "train_loss": train_loss,
             "test_loss": now_loss,
             "test_acc": test_acc
         }
-        mat_info_dit['epoches'].append(epoches_dict)
+        mat_info_dit['epochs'].append(epochs_dict)
 
         # 学习率动态衰减
         if last_loss/now_loss <0.8:
@@ -259,35 +260,23 @@ def auto_train(argvs,times):
     return mat_info_dit
 
 
+label_name = 'p&d10.npy'
+# dir create
+mkdir('./result/CWRU/'+label_name[:-4]+'/logs/')
+mkdir('./result/CWRU/'+label_name[:-4]+'/mat/')
+
 # label_name, FullChannel, 
 # IgnoreNormal, batch_size, patch_size, 
-# dim, depth, head, dim_head, mlp_dim
+# dim, depth, head, dim_head, mlp_dim, epochs
 iter_list = [
-    #['p&d10.npy',False,False,64,8,128,6,6,64,256],
-    #['p&d10.npy',False,False,64,16,128,6,6,64,256],
-    #['p&d10.npy',False,False,64,32,128,6,6,64,256],
-    #['p&d10.npy',False,False,64,64,128,6,6,64,256],
-    ['p&d10.npy',False,False,64,128,128,6,6,64,256],
-    ['p&d10.npy',False,False,64,256,128,6,6,64,256],
-    ['p&d10.npy',False,False,64,512,128,6,6,64,256],
-    ['p&d10.npy',False,False,64,1024,128,6,6,64,256],
-    ['p&d10.npy',False,False,64,2048,128,6,6,64,256],
-    ['p&d10.npy',False,False,64,8,16,6,6,64,32],
-    ['p&d10.npy',False,False,64,8,32,6,6,64,64],
-    ['p&d10.npy',False,False,64,8,64,6,6,64,128],
-    ['p&d10.npy',False,False,64,8,128,6,6,8,256],
-    ['p&d10.npy',False,False,64,8,128,6,6,16,256],
-    ['p&d10.npy',False,False,64,8,128,6,6,32,256],
-    ['p&d10.npy',False,False,64,8,128,6,6,128,256],
-    ['p&d10.npy',False,False,64,8,128,6,1,64,256],
-    ['p&d10.npy',False,False,64,8,128,6,2,64,256],
-    ['p&d10.npy',False,False,64,8,128,6,4,64,256],
-    ['p&d10.npy',False,False,64,8,128,1,6,64,256],
-    ['p&d10.npy',False,False,64,8,128,2,6,64,256],
-    ['p&d10.npy',False,False,64,8,128,4,6,64,256]
+    [label_name,False,False,64,1024,16,1,2,64,32,3],
+    [label_name,False,False,64,128,128,6,6,64,256,15],
+    [label_name,False,False,64,256,128,6,6,64,256,15],
 ]
 l = len(iter_list)
 repeat = 3
+
+# start train
 for i in range(l):
     print('----------------------')
     print(f'{i+1} of {l} started.')
@@ -308,7 +297,7 @@ for i in range(l):
     }
     mat_name = argvs[0][:-4] + '/mat/' + \
         'FC' + str(int(argvs[1])) + \
-        'IN' + str(int(argvs[2])) + \
+        '-IN' + str(int(argvs[2])) + \
         '-bs' + str(argvs[3]) + \
         '-ps' + str(argvs[4]) + \
         '-d' + str(argvs[5]) + \
