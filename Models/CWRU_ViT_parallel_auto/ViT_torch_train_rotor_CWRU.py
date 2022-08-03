@@ -177,7 +177,7 @@ def auto_train(argvs,times):
             optimizer.step()
 
             if batch % 15 == 0:
-                loss, current = loss.item(), batch * len(X)
+                loss, current = loss.item(), batch * dataloader.batch_size
                 logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
                 loss_arr.append(loss)
         return loss_arr
@@ -269,9 +269,15 @@ mkdir('./result/CWRU/'+label_name[:-4]+'/mat/')
 # IgnoreNormal, batch_size, patch_size, 
 # dim, depth, head, dim_head, mlp_dim, epochs
 iter_list = [
+<<<<<<< HEAD
     [label_name,False,False,64,16,128,6,6,64,256,10],
     #[label_name,False,False,64,128,128,6,6,64,256,15],
     #[label_name,False,False,64,256,128,6,6,64,256,15],
+=======
+    [label_name,False,False,64,2048,16,1,2,64,32,3],
+    [label_name,False,False,64,128,128,6,6,64,256,15],
+    [label_name,False,False,64,256,128,6,6,64,256,15],
+>>>>>>> aa1cdee1d0c025be1296025e8647a449ebb07eea
 ]
 l = len(iter_list)
 repeat = 3
