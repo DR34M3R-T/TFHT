@@ -5,18 +5,22 @@ from torchvision import transforms
 import numpy as np
 import MyViT_CWRU
 import logging
+import scipy.io
 
-def auto_train(argvs):
+def auto_train(argvs,times):
     (label_name, FullChannel, 
     IgnoreNormal, batch_size, patch_size, 
     dim, depth, head, dim_head, mlp_dim) = argvs
-    
+    mat_info_dit = {}
     # 开始时间
     start_time=datetime.datetime.now()
     # 设定为DoubleTensor
     torch.set_default_tensor_type(torch.DoubleTensor)
     # 设定训练用的设备
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    mat_info_dit['repeat_times']=times
+    mat_info_dit['start']=str(start_time)
+    mat_info_dit['epoches']=[]
 
     # FullChannel=False
     # IgnoreNormal=False
@@ -44,7 +48,7 @@ def auto_train(argvs):
     ViT_Channels=3 if FullChannel else 1
 
     #重定向log输出
-    logname = label_name[:-4] + '/' + \
+    logname = label_name[:-4] + '/logs/' + \
         'C' + str(ViT_Channels) + \
         '-cn' + str(class_num) + \
         '-bs' + str(batch_size) + \
@@ -53,11 +57,12 @@ def auto_train(argvs):
         '-dp' + str(depth) + \
         '-h' + str(head) + \
         '-dk' + str(dim_head) + \
-        '-md' + str(mlp_dim) +'.log'
+        '-md' + str(mlp_dim) + \
+        '-' + str(times).zfill(2) + '.log'
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    fh = logging.FileHandler(filename='./result/CWRU/logs/{}'.format(logname), mode='a', encoding="utf-8", delay=False)
+    fh = logging.FileHandler(filename='./result/CWRU/{}'.format(logname), mode='a', encoding="utf-8", delay=False)
     fmt = logging.Formatter("[%(asctime)s] %(message)s")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(fmt=fmt)
@@ -142,7 +147,7 @@ def auto_train(argvs):
         dropout = 0.1,
         emb_dropout = 0.1
     ).to(device)#这里的训练强度已经减小了
-    epochs = 10 #定义训练轮数
+    epochs = 3 #定义训练轮数
 
     # 加载模型
     # v=torch.load('./result/ViT-pretrained-net.pt')
@@ -157,6 +162,7 @@ def auto_train(argvs):
     # 定义训练循环
     def train_loop(dataloader, model, loss_fn, optimizer):
         size = len(dataloader.dataset)
+        loss_arr = []
         for batch, (X, y) in enumerate(dataloader):
             X = X.to(device)
             y = y.to(device)
@@ -169,9 +175,11 @@ def auto_train(argvs):
             loss.backward()
             optimizer.step()
 
-            if batch % 10 == 0:
+            if batch % 15 == 0:
                 loss, current = loss.item(), batch * len(X)
                 logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+                loss_arr.append(loss)
+        return loss_arr
     # 定义测试循环
     def test_loop(dataloader, model, loss_fn):
         size = len(dataloader.dataset)
@@ -189,7 +197,7 @@ def auto_train(argvs):
         test_loss /= num_batches
         correct /= size
         logger.info(f"Test Error: Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f}")
-        return test_loss
+        return test_loss, correct
 
     last_loss=100
     now_loss=100
@@ -197,9 +205,19 @@ def auto_train(argvs):
         new_lr=ExpLR.get_last_lr()[0]
         logger.info(f"Epoch {t+1}---------------")
         logger.info(f'lr: {new_lr:>7e}')
-        train_loop(train_dataloader, v, loss_fn, optimizer)
+        train_loss = train_loop(train_dataloader, v, loss_fn, optimizer)
         last_loss=now_loss
-        now_loss=test_loop(test_dataloader, v, loss_fn)
+        now_loss, test_acc=test_loop(test_dataloader, v, loss_fn)
+
+        # 数据写入字典
+        epoches_dict = {
+            "epoch": t+1,
+            "train_loss": train_loss,
+            "test_loss": now_loss,
+            "test_acc": test_acc
+        }
+        mat_info_dit['epoches'].append(epoches_dict)
+
         # 学习率动态衰减
         if last_loss/now_loss <0.8:
             ExpLR.step()
@@ -213,9 +231,10 @@ def auto_train(argvs):
         if last_loss/now_loss <1.4:
             ExpLR.step()
         else:ExpLR.step()
+    end_time=datetime.datetime.now()
     logger.info("Done!")
 
-    torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
+    #torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 
 
     # 显示参数数量
@@ -224,7 +243,21 @@ def auto_train(argvs):
         nb_param += np.prod(list(param.data.size()))
     #for param in v.parameters():
     #    logger.info(type(param.data), param.size())
-    logger.info('Number of parameters:', nb_param)
+    logger.info('Number of parameters:{}'.format(nb_param))
+
+    # 输出结束时间
+    logger.info("## end time: {}".format(end_time))
+    logger.info("## used time: {}".format(end_time-start_time))
+
+    # 删除handler
+    logger.removeHandler(fh)
+    logger.removeHandler(ch)
+
+    mat_info_dit['end']=str(end_time)
+    mat_info_dit['time_used']=str(end_time-start_time)
+
+    return mat_info_dit
+
 
 # label_name, FullChannel, 
 # IgnoreNormal, batch_size, patch_size, 
@@ -254,7 +287,40 @@ iter_list = [
     ['p&d10.npy',False,False,64,8,128,4,6,64,256]
 ]
 l = len(iter_list)
+repeat = 3
 for i in range(l):
+    print('----------------------')
+    print(f'{i+1} of {l} started.')
+
     argvs=iter_list[i]
-    auto_train(argvs)
+    mat = {
+        "in_train": argvs[0],
+        "FullChannel": argvs[1],
+        "IgnoreNormal": argvs[2],
+        "batch_size": argvs[3],
+        "patch_size": argvs[4],
+        "dim": argvs[5],
+        "depth": argvs[6],
+        "head": argvs[7],
+        "dim_head": argvs[8],
+        "mlp_dim": argvs[9],
+        "repeat":[]
+    }
+    mat_name = argvs[0][:-4] + '/mat/' + \
+        'FC' + str(int(argvs[1])) + \
+        'IN' + str(int(argvs[2])) + \
+        '-bs' + str(argvs[3]) + \
+        '-ps' + str(argvs[4]) + \
+        '-d' + str(argvs[5]) + \
+        '-dp' + str(argvs[6]) + \
+        '-h' + str(argvs[7]) + \
+        '-dk' + str(argvs[8]) + \
+        '-md' + str(argvs[9]) + '.mat'
+
+    for times in range(repeat):
+        print(f'# This is the No.{times+1} repeat of total {repeat} repeats.\n')
+        mat['repeat'].append(auto_train(argvs,times+1))
+        print(f'\n# No.{times+1} repeat finished')
+
+    scipy.io.savemat('./result/CWRU/' + mat_name, mdict=mat)
     print(f'{i+1} of {l} finished.')
