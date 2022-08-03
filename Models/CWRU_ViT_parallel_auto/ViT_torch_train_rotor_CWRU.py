@@ -6,7 +6,7 @@ import numpy as np
 import MyViT_CWRU
 import logging
 import scipy.io
-from Toolbox.mkdir import mkdir
+from mkdir import mkdir
 
 def auto_train(argvs,times):
     (label_name, FullChannel, 
