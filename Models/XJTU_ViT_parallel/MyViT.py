@@ -57,7 +57,7 @@ class ViT(nn.Module):
             x[i] = self.transformer[i](x[i])
 
             x[i] = x[i].mean(dim = 1) if self.pool == 'mean' else x[i][:, 0]
-        x_total = torch.cat((x[0],x[1]),dim=1)
+        x_total = torch.cat(tuple(x[k] for k in range(self.path_num)),dim=1)
         x_total = self.to_latent(x_total)
         x_total = self.mlp_head(x_total)
         return x_total
