@@ -182,7 +182,7 @@ def auto_train(argvs,times):
                 loss_arr.append(loss)
         return loss_arr
     # 定义测试循环
-    def test_loop(dataloader, model, loss_fn):
+    def test_loop(dataloader, model, loss_fn, train=False):
         size = len(dataloader.dataset)
         num_batches = len(dataloader)
         test_loss, correct = 0, 0
@@ -197,7 +197,7 @@ def auto_train(argvs,times):
 
         test_loss /= num_batches
         correct /= size
-        logger.info(f"Test Error: Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f}")
+        logger.info(f"{'Train' if train else 'Test '} Error: Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f}")
         return test_loss, correct
 
     last_loss=100
@@ -208,12 +208,15 @@ def auto_train(argvs,times):
         logger.info(f'lr: {new_lr:>7e}')
         train_loss = train_loop(train_dataloader, v, loss_fn, optimizer)
         last_loss=now_loss
-        now_loss, test_acc=test_loop(test_dataloader, v, loss_fn)
+        train_loss_final, train_acc = test_loop(train_dataloader, v, loss_fn, train = True)
+        now_loss, test_acc = test_loop(test_dataloader, v, loss_fn, train=False)
 
         # 数据写入字典
         epochs_dict = {
             "epoch": t+1,
-            "train_loss": train_loss,
+            "train_loss_list": train_loss,
+            "train_loss": train_loss_final,
+            "train_acc": train_acc,
             "test_loss": now_loss,
             "test_acc": test_acc
         }
@@ -269,7 +272,7 @@ mkdir('./result/CWRU/'+label_name[:-4]+'/mat/')
 # IgnoreNormal, batch_size, patch_size, 
 # dim, depth, head, dim_head, mlp_dim, epochs
 iter_list = [
-    [label_name,False,False,64,16,128,6,6,64,256,10],
+    [label_name,False,False,64,256,32,1,2,64,64,10],
     #[label_name,False,False,64,128,128,6,6,64,256,15],
     #[label_name,False,False,64,256,128,6,6,64,256,15],
 ]
