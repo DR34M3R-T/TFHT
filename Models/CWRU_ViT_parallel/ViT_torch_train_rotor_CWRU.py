@@ -11,11 +11,11 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # 打印看一下
 print("Using {} device".format(device))
 
-FullChannel=True
+FullChannel=False
 IgnoreNormal=False
 
 # 导入raw数据集
-label_name='p4.npy'
+label_name='p&d10.npy'
 data = torch.from_numpy(np.load('./dataset/CWRU/data.npy')) #7253 3 2048
 label = torch.from_numpy(np.load('./dataset/CWRU/'+label_name)) #7253
 label = label.type(torch.LongTensor)
@@ -95,13 +95,13 @@ ViT_Channels=3 if FullChannel else 1
 print("Nunber of ViT channels:{}.".format(ViT_Channels))
 v = MyViT_CWRU.ViT( #定义ViT模型
     image_size = 2048,
-    patch_size = 64,
+    patch_size = 256,
     channels=ViT_Channels,
     num_classes = class_num,
-    dim = 64,
+    dim = 32,
     depth = 2,
     heads = 4,
-    mlp_dim = 128,
+    mlp_dim = 64,
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
@@ -154,6 +154,21 @@ def test_loop(dataloader, model, loss_fn):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f} \n")
     return test_loss
 
+def pred_gen(dataloader_list, model):
+    pred_list = torch.tensor([])
+    real_list = torch.tensor([])
+    for dataloader in dataloader_list:
+        with torch.no_grad():
+            for X, y in dataloader:
+                X = X.to(device)
+                y = y.to(device)
+                pred = model(X)
+                pred = pred.argmax(1)
+                real_list = torch.cat((real_list,y))
+                pred_list = torch.cat((pred_list,pred))
+    return pred_list,real_list
+    
+
 last_loss=100
 now_loss=100
 for t in range(epochs): # 开始训练
@@ -178,8 +193,13 @@ for t in range(epochs): # 开始训练
     else:ExpLR.step()
 print("Done!")
 
-torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 
+p = pred_gen([train_dataloader,test_dataloader],v)
+
+np.save('./result/CWRU/p&d10/conf_mat/pred.npy',p[0].numpy())
+np.save('./result/CWRU/p&d10/conf_mat/real.npy',p[1].numpy())
+
+# torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 
 # 显示参数数量
 nb_param = 0
