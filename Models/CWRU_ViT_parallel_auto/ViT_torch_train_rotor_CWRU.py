@@ -272,9 +272,12 @@ mkdir('./result/CWRU/'+label_name[:-4]+'/mat/')
 # IgnoreNormal, batch_size, patch_size, 
 # dim, depth, head, dim_head, mlp_dim, epochs
 iter_list = [
-    [label_name,False,False,64,256,32,1,2,64,64,10],
+    #[label_name,False,False,64,256,32,1,2,64,64,10],
     #[label_name,False,False,64,128,128,6,6,64,256,15],
     #[label_name,False,False,64,256,128,6,6,64,256,15],
+    [label_name,False,False,64,16,128,6,1,64,256,15],
+    [label_name,False,False,64,16,128,6,2,64,256,15],
+    [label_name,False,False,64,16,128,6,4,64,256,15],
 ]
 l = len(iter_list)
 repeat = 3
