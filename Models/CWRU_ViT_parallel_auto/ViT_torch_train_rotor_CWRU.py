@@ -275,15 +275,9 @@ iter_list = [
     #[label_name,False,False,64,256,32,1,2,64,64,10],
     #[label_name,False,False,64,128,128,6,6,64,256,15],
     #[label_name,False,False,64,256,128,6,6,64,256,15],
-    [label_name,False,False,32,8,128,6,6,64,256,15],
-    [label_name,False,False,32,16,128,6,6,64,256,15],
-    [label_name,False,False,32,32,128,6,6,64,256,15],
-    [label_name,False,False,32,64,128,6,6,64,256,15],
-    [label_name,False,False,32,128,128,6,6,64,256,15],
-    [label_name,False,False,32,256,128,6,6,64,256,15],
-    [label_name,False,False,32,512,128,6,6,64,256,15],
-    [label_name,False,False,32,1024,128,6,6,64,256,15],
-    [label_name,False,False,32,2048,128,6,6,64,256,15],
+    [label_name,False,False,32,8,128,6,1,64,256,15],
+    [label_name,False,False,32,8,128,6,2,64,256,15],
+    [label_name,False,False,32,8,128,6,4,64,256,15],
 ]
 l = len(iter_list)
 repeat = 3
