@@ -124,9 +124,9 @@ pd10_classlist=[
 print('Starting compute t-SNE Embedding...')
 ts = TSNE(n_components=2, learning_rate=200, init='pca')
 # t-SNE降维
-reslut = ts.fit_transform(data)
+result = ts.fit_transform(data)
 # 调用函数，绘制图像
-fig = plot_embedding(reslut, label, 't-SNE Embedding of ViT class_token', pd10_classlist)
+fig = plot_embedding(result, label, 't-SNE Embedding of ViT class_token', pd10_classlist)
 # 显示图像
 plt.show()
 pass
