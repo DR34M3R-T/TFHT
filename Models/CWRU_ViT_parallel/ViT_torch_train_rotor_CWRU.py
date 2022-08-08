@@ -105,7 +105,7 @@ v = MyViT_CWRU.ViT( #定义ViT模型
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
-epochs = 1 #定义训练轮数
+epochs = 10 #定义训练轮数
 
 # 加载模型
 # v=torch.load('./result/ViT-pretrained-net.pt')
@@ -153,7 +153,7 @@ def test_loop(dataloader, model, loss_fn):
     correct /= size
     print(f"Test Error: \n Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f} \n")
     return test_loss
-
+# 预测序列生成 用于绘制混淆矩阵
 def pred_gen(dataloader_list, model):
     pred_list = torch.tensor([])
     real_list = torch.tensor([])
@@ -167,6 +167,19 @@ def pred_gen(dataloader_list, model):
                 real_list = torch.cat((real_list,y))
                 pred_list = torch.cat((pred_list,pred))
     return pred_list,real_list
+# 输出特征 用于绘制tsne降维图
+def feature_gen(dataloader_list, model):
+    feature_list = torch.tensor([])
+    real_list = torch.tensor([])
+    for dataloader in dataloader_list:
+        with torch.no_grad():
+            for X, y in dataloader:
+                X = X.to(device)
+                y = y.to(device)
+                feature = model(X,feature_out=True)
+                real_list = torch.cat((real_list,y))
+                feature_list = torch.cat((feature_list,feature))
+    return feature_list,real_list
     
 
 last_loss=100
@@ -193,11 +206,16 @@ for t in range(epochs): # 开始训练
     else:ExpLR.step()
 print("Done!")
 
-
-p = pred_gen([train_dataloader,test_dataloader],v)
-
-np.save('./result/CWRU/p&d10/conf_mat/pred.npy',p[0].numpy())
-np.save('./result/CWRU/p&d10/conf_mat/real.npy',p[1].numpy())
+draw_conf_mat = False
+draw_tsne = True
+if draw_conf_mat:
+    p = pred_gen([train_dataloader,test_dataloader],v)
+    np.save('./result/CWRU/p&d10/conf_mat/pred.npy',p[0].numpy())
+    np.save('./result/CWRU/p&d10/conf_mat/real.npy',p[1].numpy().astype('int'))
+if draw_tsne:
+    f = feature_gen([train_dataloader,test_dataloader],v)
+    np.save('./result/CWRU/p&d10/tsne_npy/feature.npy',f[0].numpy())
+    np.save('./result/CWRU/p&d10/tsne_npy/label.npy',f[1].numpy().astype('int'))
 
 # torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 

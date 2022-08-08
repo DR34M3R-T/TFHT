@@ -41,7 +41,7 @@ class ViT(nn.Module):
             nn.Linear(dim*path_num, num_classes)
         )
 
-    def forward(self, img):
+    def forward(self, img, feature_out=False):
         #print(img.size())
         x=['',''];
         for i in range(self.path_num):
@@ -58,5 +58,5 @@ class ViT(nn.Module):
             x[i] = x[i].mean(dim = 1) if self.pool == 'mean' else x[i][:, 0]
         x_total = torch.cat(tuple(x[k] for k in range(self.path_num)),dim=1)
         x_total = self.to_latent(x_total)
-        x_total = self.mlp_head(x_total)
-        return x_total
+        if feature_out: return x_total
+        return self.mlp_head(x_total)
