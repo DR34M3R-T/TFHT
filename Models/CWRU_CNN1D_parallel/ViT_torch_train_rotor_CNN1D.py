@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader,Dataset
 from torchvision import transforms
 import numpy as np
 import MyCNN1D_CWRU
+from sklearn.model_selection import train_test_split
 
 
 # 设定训练用的设备
@@ -40,12 +41,7 @@ class_num = torch.unique(label).shape[0]
 print("Nunber of classes:{}.".format(class_num))
 
 
-rand_arr = np.random.randint(low=0, high=10, size=data.shape[0])
-rand_arr = torch.from_numpy(np.bool_(np.clip(rand_arr,2,3)-2))
-data_train = data[rand_arr==1]
-label_train = label[rand_arr==1]
-data_test = data[rand_arr==0]
-lable_test = label[rand_arr==0]
+data_train,data_test,label_train,lable_test = train_test_split(data,label,train_size=0.7)
 
 # 自定义dataset和数据集预处理
 preprocess = transforms.Compose([

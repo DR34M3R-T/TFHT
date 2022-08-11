@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader,Dataset
 from torchvision import transforms
 import numpy as np
 import MyViT_CWRU
+from sklearn.model_selection import train_test_split
 
 
 # 设定训练用的设备
@@ -14,12 +15,7 @@ print("Using {} device".format(device))
 # 导入raw数据集
 data = torch.from_numpy(np.load('./dataset/CWRU/data.npy')) #7253 3 2048
 label = torch.from_numpy(np.load('./dataset/CWRU/relabel.npy')) #7253 7
-rand_arr = np.random.randint(low=0, high=9, size=(7253))
-rand_arr = torch.from_numpy(np.bool_(np.clip(rand_arr,2,3)-2))
-data_train = data[rand_arr==1]
-label_train = label[rand_arr==1]
-data_test = data[rand_arr==0]
-lable_test = label[rand_arr==0]
+data_train,data_test,label_train,lable_test = train_test_split(data,label,train_size=0.7)
 
 # 自定义dataset和数据集预处理
 preprocess = transforms.Compose([
