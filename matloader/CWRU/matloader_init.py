@@ -6,7 +6,7 @@ import numpy as np
 #label_to_add = np.load('dataset/CWRU/label.npy')
 
 file_name = "OR007@3_0.mat"
-path = 'dataset/12k_fan_end/'
+path = 'dataset/CWRU/12k_fan_end/'
 #path = path +'/'
 data = sio.loadmat(path + file_name)
 

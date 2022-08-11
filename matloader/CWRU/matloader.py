@@ -123,10 +123,15 @@ def matloader(file_name,path):
     if (file_name == 'normal_2.mat'):
         fan2=np.squeeze(data['X099_FE_time'])
         drive2=np.squeeze(data['X099_DE_time'])
-        fan = np.split(fan,[483328])[0]
-        drive = np.split(drive,[483328])[0]
-        fan = np.concatenate((fan,fan2))
-        drive = np.concatenate((drive,drive2))
+
+        '''
+        normal2包含了normal1的数据 因此像下面注释一样拼接是不对的
+        只保留X099就行了
+        '''
+        # fan = np.split(fan,[483328])[0]
+        # drive = np.split(drive,[483328])[0]
+        fan = fan2 #np.concatenate((fan,fan2))
+        drive = drive2 #np.concatenate((drive,drive2))
         base=np.zeros((1000000,))
         pass
 
@@ -149,7 +154,7 @@ def matloader(file_name,path):
     data_cut_combine = np.concatenate((data_cut,data_cut_combine))
     pass
 
-filepath_list = ['dataset/normal/','dataset/12k_fan_end/','dataset/12k_drive_end/']
+filepath_list = ['dataset/CWRU/normal/','dataset/CWRU/12k_fan_end/','dataset/CWRU/12k_drive_end/']
 filelist = []
 # 遍历filepath下所有文件，不含
 for filepath in filepath_list:
@@ -162,8 +167,14 @@ for filepath in filepath_list:
     for item in files:
         if (item!='rename.bat'):
             if (item!='renamelist.xlsx'):
-                if ((item!='OR007@3_0.mat') | (filepath != 'dataset/12k_fan_end/')): 
+                if ((item!='OR007@3_0.mat') | (filepath != 'dataset/CWRU/12k_fan_end/')): 
                     matloader(item,filepath)
+
+                    t = np.unique(data_cut_combine,axis=0,return_inverse=True,return_index=True,return_counts=True)
+                    data_collide = data_cut_combine[t[1][t[3]==2]]
+                    label_collide = label_cut_combine[t[1][t[3]==2]]
+                    label_collide_values = np.unique(label_collide)
+
                     print('\r' + str(i) + '/' + str(len(files)),end='')
                     i+=1
 np.save('dataset/CWRU/label.npy',label_cut_combine)
