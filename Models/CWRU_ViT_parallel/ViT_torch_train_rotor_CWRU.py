@@ -40,6 +40,8 @@ else:
 class_num = torch.unique(label).shape[0]
 print("Nunber of classes:{}.".format(class_num))
 
+data=data.to(device)
+label=label.to(device)
 
 data_train,data_test,label_train,lable_test = train_test_split(data,label,train_size=0.7)
 
@@ -117,8 +119,6 @@ ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95) #绑定衰
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
-        X = X.to(device)
-        y = y.to(device)
         # Compute prediction and loss
         pred = model(X)
         loss = loss_fn(pred, y)
@@ -139,8 +139,6 @@ def test_loop(dataloader, model, loss_fn):
 
     with torch.no_grad():
         for X, y in dataloader:
-            X = X.to(device)
-            y = y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
@@ -151,13 +149,11 @@ def test_loop(dataloader, model, loss_fn):
     return test_loss
 # 预测序列生成 用于绘制混淆矩阵
 def pred_gen(dataloader_list, model):
-    pred_list = torch.tensor([])
-    real_list = torch.tensor([])
+    pred_list = torch.tensor([]).to(device)
+    real_list = torch.tensor([]).to(device)
     for dataloader in dataloader_list:
         with torch.no_grad():
             for X, y in dataloader:
-                X = X.to(device)
-                y = y.to(device)
                 pred = model(X)
                 pred = pred.argmax(1)
                 real_list = torch.cat((real_list,y))
@@ -165,13 +161,11 @@ def pred_gen(dataloader_list, model):
     return pred_list,real_list
 # 输出特征 用于绘制tsne降维图
 def feature_gen(dataloader_list, model):
-    feature_list = torch.tensor([])
-    real_list = torch.tensor([])
+    feature_list = torch.tensor([]).to(device)
+    real_list = torch.tensor([]).to(device)
     for dataloader in dataloader_list:
         with torch.no_grad():
             for X, y in dataloader:
-                X = X.to(device)
-                y = y.to(device)
                 feature = model(X,feature_out=True)
                 real_list = torch.cat((real_list,y))
                 feature_list = torch.cat((feature_list,feature))
@@ -211,6 +205,8 @@ if draw_conf_mat:
 if draw_tsne:
     f = feature_gen([train_dataloader,test_dataloader],v)
     np.save('./result/CWRU/p&d10/tsne_npy/feature.npy',f[0].numpy())
+    np.save('./result/CWRU/p&d10/tsne_npy/feature_t.npy',f[0][:,0:32].numpy())
+    np.save('./result/CWRU/p&d10/tsne_npy/feature_f.npy',f[0][:,32:64].numpy())
     np.save('./result/CWRU/p&d10/tsne_npy/label.npy',f[1].numpy().astype('int'))
 
 # torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
