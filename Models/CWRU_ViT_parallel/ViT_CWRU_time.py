@@ -64,7 +64,7 @@ class BearFaultDataset(Dataset):
             self.inputs = torch.cat(torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1))
             self.inputs = self.inputs[:, :2025].reshape((-1, 45, 45))
         else:
-            self.inputs = torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
+            self.inputs = torch.unsqueeze(inputs,1) #torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
         self.targets = targets
         values = torch.unique(self.targets)
         self.transform = transform
@@ -96,6 +96,7 @@ v = MyViT_CWRU.ViT( #定义ViT模型
     patch_size = 256,
     channels=ViT_Channels,
     num_classes = class_num,
+    path_num=1,
     dim = 32,
     depth = 2,
     heads = 4,
