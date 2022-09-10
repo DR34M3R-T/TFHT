@@ -1,3 +1,15 @@
+import types
+import math
+from torch._six import inf
+from functools import wraps
+import warnings
+import weakref
+from collections import Counter
+from bisect import bisect_right
+
+from torch.optim.optimizer import Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
+
 class Decrease_inregular(_LRScheduler):
     """
     在epoch小于min_iter的时候让准确率在min_lr附近
@@ -23,7 +35,7 @@ class Decrease_inregular(_LRScheduler):
         self.max_lr = max_lr
         self.need_iter = need_iter
         self.gamma = gamma
-        super(LinearLR, self).__init__(optimizer, last_epoch, verbose)
+        super(Decrease_inregular, self).__init__(optimizer, last_epoch, verbose)
 
     def get_lr(self):
         if not self._get_lr_called_within_step:
