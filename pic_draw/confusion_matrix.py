@@ -58,13 +58,16 @@ def gen_confusion_matrix(real,pred,class_list):
     plot_confusion_matrix(cm,class_list,normalize=True)
     pass
 
-real = np.load('./result/CWRU/p&d10/conf_mat/real.npy')
-pred = np.load('./result/CWRU/p&d10/conf_mat/pred.npy')
+real = np.load('./result/XJTU/conf_mat/real.npy')
+pred = np.load('./result/XJTU/conf_mat/pred.npy')
 
 pd10_classlist=[
     'NC','B007','B014','B021',
     'IR007','IR014','IR021',
     'OR007','OR014','OR021',
 ]
+xj_classlist=[
+    'OR','IBCO','IR','Cage'
+]
 
-gen_confusion_matrix(real,pred,pd10_classlist)
+gen_confusion_matrix(real,pred,xj_classlist)

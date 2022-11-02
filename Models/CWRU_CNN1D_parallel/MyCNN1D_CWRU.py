@@ -102,7 +102,7 @@ class CNN1D(nn.Module):
 
         self.out = nn.Linear(100*path_num, num_classes)
 
-    def forward(self, sig):
+    def forward(self, sig, feature_out=False):
         x=['','']
         for i in range(self.path_num):
             #x[i] = sig[:,i].unsqueeze(1)
@@ -110,4 +110,6 @@ class CNN1D(nn.Module):
             x[i] = self.flatten[i](x[i])
         x_total = torch.cat(tuple(x[k] for k in range(self.path_num)),dim=1)
         features = self.to_latent(x_total)
+
+        if feature_out: return x_total
         return self.out(features)
