@@ -1,5 +1,4 @@
 #TSNE 示例代码
-from turtle import color
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -112,8 +111,8 @@ def plot_embedding(data, label, title, class_dict):
 
 # data, label , n_samples, n_features = get_data()		# 调用函数，获取数据集信息
 
-data=np.load('./result/CWRU/p&d10/tsne_npy/feature.npy')#[:1000]
-label=np.load('./result/CWRU/p&d10/tsne_npy/label.npy')#[:1000]
+data=np.load('./result/XJTU/CNN_tsne_npy/feature.npy')#[:1000]
+label=np.load('./result/XJTU/CNN_tsne_npy/label.npy')#[:1000]
 
 pd10_classlist=[
     'NC','B007','B014','B021',
@@ -121,12 +120,19 @@ pd10_classlist=[
     'OR007','OR014','OR021',
 ]
 
+xj_classlist=[
+    'OR','IBCO','IR','Cage'
+]
+
+p4_classlist=[
+    'NC','B','IR','OR']
+
 print('Starting compute t-SNE Embedding...')
 ts = TSNE(n_components=2, learning_rate=200, init='pca')
 # t-SNE降维
 result = ts.fit_transform(data)
 # 调用函数，绘制图像
-fig = plot_embedding(result, label, 't-SNE Embedding of ViT class_token', pd10_classlist)
+fig = plot_embedding(result, label, 't-SNE Embedding of CNN1D features', xj_classlist)
 # 显示图像
 plt.show()
 pass

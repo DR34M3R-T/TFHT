@@ -62,10 +62,10 @@ v = MyViT.ViT( #定义ViT模型
     image_size = 2048,
     patch_size = 64,
     num_classes = 4,
-    dim = 256,
+    dim = 64,
     depth = 2,
-    heads = 4,
-    mlp_dim = 512,
+    heads = 2,
+    mlp_dim = 128,
     dropout = 0.1,
     emb_dropout = 0.1
 ).to(device)#这里的训练强度已经减小了
@@ -117,6 +117,29 @@ def test_loop(dataloader, model, loss_fn):
     correct /= size
     print(f"Test Error: \n Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f} \n")
     return test_loss
+# 预测序列生成 用于绘制混淆矩阵
+def pred_gen(dataloader_list, model):
+    pred_list = torch.tensor([]).to(device)
+    real_list = torch.tensor([]).to(device)
+    for dataloader in dataloader_list:
+        with torch.no_grad():
+            for X, y in dataloader:
+                pred = model(X)
+                pred = pred.argmax(1)
+                real_list = torch.cat((real_list,y))
+                pred_list = torch.cat((pred_list,pred))
+    return pred_list,real_list
+# 输出特征 用于绘制tsne降维图
+def feature_gen(dataloader_list, model):
+    feature_list = torch.tensor([]).to(device)
+    real_list = torch.tensor([]).to(device)
+    for dataloader in dataloader_list:
+        with torch.no_grad():
+            for X, y in dataloader:
+                feature = model(X,feature_out=True)
+                real_list = torch.cat((real_list,y))
+                feature_list = torch.cat((feature_list,feature))
+    return feature_list,real_list
 
 last_loss=100
 now_loss=100
@@ -136,13 +159,25 @@ for t in range(epochs): # 开始训练
         ExpLR.step()
 print("Done!")
 
-torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
+#torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 
+draw_conf_mat = True
+draw_tsne = False
+if draw_conf_mat:
+    p = pred_gen([train_dataloader,test_dataloader],v)
+    np.save('./result/XJTU/conf_mat/pred.npy',p[0].numpy())
+    np.save('./result/XJTU/conf_mat/real.npy',p[1].numpy().astype('int'))
+if draw_tsne:
+    f = feature_gen([train_dataloader,test_dataloader],v)
+    np.save('./result/XJTU/tsne_npy/feature.npy',f[0].numpy())
+    np.save('./result/XJTU/tsne_npy/feature_t.npy',f[0][:,0:32].numpy())
+    np.save('./result/XJTU/tsne_npy/feature_f.npy',f[0][:,32:64].numpy())
+    np.save('./result/XJTU/tsne_npy/label.npy',f[1].numpy().astype('int'))
 
 # 显示参数数量
 nb_param = 0
 for param in v.parameters():
     nb_param += np.prod(list(param.data.size()))
-    print(param.names,type(param.data), param.size())
+    #print(param.names,type(param.data), param.size())
 #for param in v.parameters():
 print('Number of parameters:', nb_param)

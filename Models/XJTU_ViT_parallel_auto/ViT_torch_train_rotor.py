@@ -3,18 +3,19 @@ import torch
 from torch.utils.data import DataLoader,Dataset
 from torchvision import transforms
 import numpy as np
-import MyViT_CWRU
+import MyViT
 import logging
 import scipy.io
 from mkdir import mkdir
 from sklearn.model_selection import train_test_split
 
 def auto_train(argvs,times):
-    (label_name, FullChannel, 
-    IgnoreNormal, batch_size, patch_size, 
+
+    (batch_size, patch_size, 
     dim, depth, head, dim_head, mlp_dim, epochs) = argvs
-    
+
     mat_info_dit = {}
+
     # 开始时间
     start_time=datetime.datetime.now()
     # 设定为DoubleTensor
@@ -25,36 +26,16 @@ def auto_train(argvs,times):
     mat_info_dit['start']=str(start_time)
     mat_info_dit['epochs']=[]
 
-    # FullChannel=False
-    # IgnoreNormal=False
-
     # 导入raw数据集
-    # label_name='label_end&position_7.npy'
-    data = torch.from_numpy(np.load('./dataset/CWRU/data.npy')) #7253 3 2048
-    label = torch.from_numpy(np.load('./dataset/CWRU/'+label_name)) #7253
-    label = label.type(torch.LongTensor)
+    x_train = torch.from_numpy(np.load('./dataset/XJTU/xTrain.npy'))
+    y_train = torch.from_numpy(np.load('./dataset/XJTU/yTrain.npy'))
+    x_test = torch.from_numpy(np.load('./dataset/XJTU/xTest.npy'))
+    y_test = torch.from_numpy(np.load('./dataset/XJTU/yTest.npy'))
 
-    # 去除负标签
-    data=data[label!=-1]
-    label=label[label!=-1]
-    if FullChannel: #去除缺通道的正常数据
-        data=data[label!=0]
-        label=label[label!=0]-1
-        data=data[label<100]
-        label=label[label<100]
-    else:
-        if IgnoreNormal:
-            data=data[label!=0]
-            label=label[label!=0]-1
-        label[label>=100]-=100
-    class_num = torch.unique(label).shape[0]
-    ViT_Channels=3 if FullChannel else 1
-
+    class_num=4
     #重定向log输出
-    logname = label_name[:-4] + '/logs/' + \
-        'C' + str(ViT_Channels) + \
-        '-cn' + str(class_num) + \
-        '-bs' + str(batch_size) + \
+    logname = 'logs/' + \
+        'bs' + str(batch_size) + \
         '-ps' + str(patch_size) + \
         '-d' + str(dim) + \
         '-dp' + str(depth) + \
@@ -65,7 +46,7 @@ def auto_train(argvs,times):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    fh = logging.FileHandler(filename='./result/CWRU/{}'.format(logname), mode='w+', encoding="utf-8", delay=False)
+    fh = logging.FileHandler(filename='./result/XJTU/{}'.format(logname), mode='w+', encoding="utf-8", delay=False)
     fmt = logging.Formatter("[%(asctime)s] %(message)s")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(fmt=fmt)
@@ -77,16 +58,11 @@ def auto_train(argvs,times):
     logger.addHandler(fh)
     logger.addHandler(ch)
 
+
     logger.info("## start time: {}".format(start_time))
     logger.info("Using {} device".format(device))
-    logger.info("In train:{}.".format(label_name))
-    logger.info("Full Channel" if FullChannel else "One Channel")
-    logger.info("No Normal and other channel-missing data." if FullChannel else (
-        "No Normal data." if IgnoreNormal else "With Normal data."))
+    logger.info("In train:{}.".format('XJ4'))
     logger.info("Nunber of classes:{}.".format(class_num))
-    logger.info("Nunber of ViT channels:{}.".format(ViT_Channels))
-
-    data_train,data_test,label_train,lable_test = train_test_split(data,label,train_size=0.7)
 
     # 自定义dataset和数据集预处理
     preprocess = transforms.Compose([
@@ -95,13 +71,11 @@ def auto_train(argvs,times):
     ])
     class BearFaultDataset(Dataset):
         def __init__(self, inputs, targets, transform, reshape):
-            if not FullChannel:
-                inputs = torch.split(inputs,1,1)[1]
             inputs_f=torch.abs(torch.fft.fft(inputs))
             #inputs_f/=len(inputs_f[0])/2
             #inputs_f[0]/=2
-            #logger.info(inputs.shape)
-            #logger.info(inputs_f.shape)
+            #print(inputs.shape)
+            #print(inputs_f.shape)
             if reshape:
                 '''这里还没写完qaq不过好像也没啥用'''
                 self.inputs = torch.cat(torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1))
@@ -109,7 +83,6 @@ def auto_train(argvs,times):
             else:
                 self.inputs = torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
             self.targets = targets
-            values = torch.unique(self.targets)
             self.transform = transform
 
         def __len__(self):
@@ -124,27 +97,26 @@ def auto_train(argvs,times):
 
     # 实例化dataset
     isreshape = False
-    training_data = BearFaultDataset(data_train, label_train, transform=preprocess, reshape=isreshape)
-    test_data = BearFaultDataset(data_test, lable_test, transform=preprocess, reshape=isreshape)
-    # logger.info(training_data.inputs.shape, test_data.inputs.shape)
+    training_data = BearFaultDataset(x_train, y_train, transform=preprocess, reshape=isreshape)
+    test_data = BearFaultDataset(x_test, y_test, transform=preprocess, reshape=isreshape)
+    # print(training_data.inputs.shape, test_data.inputs.shape)
     # 定义dataloader
-    # batch_size = 64
+    batch_size = 64
     train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-    v = MyViT_CWRU.ViT( #定义ViT模型
+    v = MyViT.ViT( #定义ViT模型
         image_size = 2048,
         patch_size = patch_size,
-        channels=ViT_Channels,
         num_classes = class_num,
         dim = dim,
         depth = depth,
         heads = head,
-        dim_head = dim_head,
         mlp_dim = mlp_dim,
         dropout = 0.1,
         emb_dropout = 0.1
     ).to(device)#这里的训练强度已经减小了
+
     logger.info(f"Totol epochs: {epochs}")
 
     # 加载模型
@@ -153,17 +125,17 @@ def auto_train(argvs,times):
     # Initialize the loss function
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    learning_rate = 0.002 #定义学习率
-    optimizer = torch.optim.NAdam(v.parameters(), lr=learning_rate,weight_decay=4e-5,momentum_decay=9e-4) #定义优化器
-    ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95) #绑定衰减学习率到优化器
+    learning_rate = 0.0008 #定义学习率
+    optimizer = torch.optim.Adam(v.parameters(), lr=learning_rate) #定义优化器
+    ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8) #绑定衰减学习率到优化器
 
     # 定义训练循环
     def train_loop(dataloader, model, loss_fn, optimizer):
         size = len(dataloader.dataset)
-        loss_arr = []
+        loss_arr=[]
         for batch, (X, y) in enumerate(dataloader):
-            X = X.to(device)
-            y = y.to(device)
+            X=X.to(device)
+            y=y.to(device)
             # Compute prediction and loss
             pred = model(X)
             loss = loss_fn(pred, y)
@@ -173,7 +145,7 @@ def auto_train(argvs,times):
             loss.backward()
             optimizer.step()
 
-            if batch % 15 == 0:
+            if batch % 10 == 0:
                 loss, current = loss.item(), batch * dataloader.batch_size
                 logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
                 loss_arr.append(loss)
@@ -186,8 +158,8 @@ def auto_train(argvs,times):
 
         with torch.no_grad():
             for X, y in dataloader:
-                X = X.to(device)
-                y = y.to(device)
+                X=X.to(device)
+                y=y.to(device)
                 pred = model(X)
                 test_loss += loss_fn(pred, y).item()
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
@@ -218,20 +190,13 @@ def auto_train(argvs,times):
             "test_acc": test_acc
         }
         mat_info_dit['epochs'].append(epochs_dict)
-
         # 学习率动态衰减
-        if last_loss/now_loss <0.8:
+        if last_loss/now_loss <0.7:
             ExpLR.step()
+        if last_loss/now_loss <0.85:
             ExpLR.step()
-        if last_loss/now_loss <0.9:
+        if last_loss/now_loss <1:
             ExpLR.step()
-            ExpLR.step()
-        if last_loss/now_loss <1.0:
-            ExpLR.step()
-            ExpLR.step()
-        if last_loss/now_loss <1.4:
-            ExpLR.step()
-        else:ExpLR.step()
     end_time=datetime.datetime.now()
     logger.info("Done!")
 
@@ -260,24 +225,19 @@ def auto_train(argvs,times):
     return mat_info_dit
 
 
-label_name = 'p&d10.npy'
 # dir create
-mkdir('./result/CWRU/'+label_name[:-4]+'/logs/')
-mkdir('./result/CWRU/'+label_name[:-4]+'/mat/')
+mkdir('./result/XJTU/logs/')
+mkdir('./result/XJTU/mat/')
 
-# label_name, FullChannel, 
-# IgnoreNormal, batch_size, patch_size, 
+# batch_size, patch_size, 
 # dim, depth, head, dim_head, mlp_dim, epochs
 iter_list = [
-    #[label_name,False,False,64,256,32,1,2,64,64,10],
-    #[label_name,False,False,64,128,128,6,6,64,256,15],
-    #[label_name,False,False,64,256,128,6,6,64,256,15],
-    [label_name,False,False,32,8,128,6,1,64,256,15],
-    [label_name,False,False,32,8,128,6,2,64,256,15],
-    [label_name,False,False,32,8,128,6,4,64,256,15],
+    [32,128,32,3,2,64,64,5],
+    [32,128,64,3,2,64,128,5],
+    [32,128,128,3,2,64,256,5],
 ]
 l = len(iter_list)
-repeat = 3
+repeat = 2
 
 # start train
 for i in range(l):
@@ -286,33 +246,29 @@ for i in range(l):
 
     argvs=iter_list[i]
     mat = {
-        "in_train": argvs[0],
-        "FullChannel": argvs[1],
-        "IgnoreNormal": argvs[2],
-        "batch_size": argvs[3],
-        "patch_size": argvs[4],
-        "dim": argvs[5],
-        "depth": argvs[6],
-        "head": argvs[7],
-        "dim_head": argvs[8],
-        "mlp_dim": argvs[9],
+        "in_train": 'XJ4',
+        "batch_size": argvs[0],
+        "patch_size": argvs[1],
+        "dim": argvs[2],
+        "depth": argvs[3],
+        "head": argvs[4],
+        "dim_head": argvs[5],
+        "mlp_dim": argvs[6],
         "repeat":[]
     }
-    mat_name = argvs[0][:-4] + '/mat/' + \
-        'FC' + str(int(argvs[1])) + \
-        '-IN' + str(int(argvs[2])) + \
-        '-bs' + str(argvs[3]) + \
-        '-ps' + str(argvs[4]) + \
-        '-d' + str(argvs[5]) + \
-        '-dp' + str(argvs[6]) + \
-        '-h' + str(argvs[7]) + \
-        '-dk' + str(argvs[8]) + \
-        '-md' + str(argvs[9]) + '.mat'
+    mat_name = 'mat/' + \
+        'bs' + str(argvs[0]) + \
+        '-ps' + str(argvs[1]) + \
+        '-d' + str(argvs[2]) + \
+        '-dp' + str(argvs[3]) + \
+        '-h' + str(argvs[4]) + \
+        '-dk' + str(argvs[5]) + \
+        '-md' + str(argvs[6]) + '.mat'
 
     for times in range(repeat):
         print(f'# This is the No.{times+1} repeat of total {repeat} repeats.\n')
         mat['repeat'].append(auto_train(argvs,times+1))
         print(f'\n# No.{times+1} repeat finished')
 
-    scipy.io.savemat('./result/CWRU/' + mat_name, mdict=mat)
+    scipy.io.savemat('./result/XJTU/' + mat_name, mdict=mat)
     print(f'{i+1} of {l} finished.')

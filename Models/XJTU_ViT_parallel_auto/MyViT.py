@@ -1,22 +1,22 @@
 import torch
 from torch import nn
-from vit_pytorch.vit import Transformer
+from vit_pytorch import Transformer
 from einops import repeat
 from einops.layers.torch import Rearrange
 
 #ViT
 class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', path_num = 2, channels=3, dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', path_num = 2, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
         assert image_size % patch_size == 0 , 'Image dimensions must be divisible by the patch size.'
         num_patches = image_size // patch_size
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
-        patch_dim = patch_size * channels
+        patch_dim = patch_size
         self.path_num = path_num
         
         self.to_patch_embedding = nn.ModuleList([
             nn.Sequential(
-                Rearrange('b c (l p)-> b l (p c)',p=patch_size),
+                Rearrange('b (l p)-> b l p',p=patch_size),
                 nn.Linear(patch_dim, dim),
             ) for i in range(self.path_num)])
 
