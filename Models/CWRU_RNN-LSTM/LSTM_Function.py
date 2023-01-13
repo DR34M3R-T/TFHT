@@ -62,18 +62,19 @@ class LSTMRNN(nn.Module):#这个是没有加池化层的原始LSTMRNN
         out = self.fc(out[:, -1, :])
         return out
 
-class mylstm(nn.Module):#这个加了池化层，花里胡哨，效果也没多好QAQ
-    def __init__(self,input_size=2048,hidden_size=128,num_layers=2, dropout=0.1,batch_size=64):
+class mylstm(nn.Module):#这个加了池化层，花里胡哨，效果真的好QAQ
+    def __init__(self,input_size=2048,hidden_size=128,num_layers=2, dropout=0.1,batch_size=64,ConvChannel = 16):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
         self.batch_size = batch_size
+        self.ConvChannel = ConvChannel
         super(mylstm, self).__init__()
         self.modle1 = nn.LSTM(input_size=self.input_size,hidden_size=self.hidden_size,num_layers=self.num_layers, batch_first=True, dropout=self.dropout)
         self.modle2=nn.Sequential     (
             nn.Flatten(),
-            nn.Linear(self.hidden_size*1,256),
+            nn.Linear(self.hidden_size*ConvChannel,256),
             nn.ReLU(),
             #nn.Dropout(0.05),
             nn.Linear(256,10)
@@ -88,42 +89,3 @@ class mylstm(nn.Module):#这个加了池化层，花里胡哨，效果也没多�
         #x=x[:,-1,:]
         x=self.modle2(x)
         return x
-
-class CovidPredictor(nn.Module):#韩国佬的Conv1dLSTM框架，还是老问题时域不收敛qaq
-    def __init__(self, n_features, n_hidden, seq_len, n_layers,out_channels = 10):
-        super(CovidPredictor, self).__init__()
-        self.n_hidden = n_hidden
-        self.seq_len = seq_len
-        self.n_layers = n_layers
-        self.out_channels = out_channels
-        self.c1 = nn.Conv1d(in_channels=2, out_channels=self.seq_len, kernel_size = 1, stride = 1) # 1D CNN 레이어 추가
-        self.lstm = nn.LSTM(
-            input_size=n_features,
-            hidden_size=n_hidden,
-            num_layers=n_layers
-        )
-        self.linear = nn.Linear(in_features=n_hidden, out_features=out_channels)
-    def reset_hidden_state(self):
-        self.hidden = (
-            torch.zeros(self.n_layers, self.seq_len, self.n_hidden),
-            torch.zeros(self.n_layers, self.seq_len, self.n_hidden)
-        )
-    def forward(self, sequences):
-        self.hidden = (
-            torch.zeros(self.n_layers, self.seq_len, self.n_hidden),
-            torch.zeros(self.n_layers, self.seq_len, self.n_hidden)
-        )
-        #print(sequences.size())
-        sequences = self.c1(sequences.view(len(sequences),self.seq_len , -1))
-        #print(sequences.size())
-        lstm_out, self.hidden = self.lstm(
-            sequences.view(len(sequences), self.seq_len, -1),
-            self.hidden
-        )
-        y = lstm_out[:, -1, :]
-        #last_time_step = lstm_out.view(self.seq_len, len(sequences), self.n_hidden)[-1]
-        #print(y.size())
-        #print(last_time_step.size())
-        y_pred = self.linear(y)
-        #print(y_pred.size())
-        return y_pred
