@@ -1,11 +1,11 @@
 import scipy.io as sio
 import numpy as np
 import os
-
+from random import randint
 global label_cut_combine,data_cut_combine
 #load
-label_cut_combine = np.load('dataset/CWRU/label.npy')
-data_cut_combine = np.load('dataset/CWRU/data.npy')
+label_cut_combine = np.empty(0,dtype=np.int64)#np.load('dataset/CWRU/label.npy')
+data_cut_combine = np.empty((0,3,2048),dtype=np.float64)
 
 
 def matloader(file_name,path):
@@ -136,17 +136,17 @@ def matloader(file_name,path):
         pass
 
     #cut!
-    data_cut = np.empty([int(drive.size/2048),3,2048])
+    data_cut = np.empty([0,3,2048])
     label_cut =[]
     i = 0
-    while((i+1)<drive.size/2048):
-        tmp = np.empty([3,2048])
-        tmp[0] = fan[i*2048:(i+1)*2048]
-        tmp[1] = drive[i*2048:(i+1)*2048]
-        tmp[2] = base[i*2048:(i+1)*2048]
-        data_cut[i] = tmp
+    while((i+2048)<drive.size):
+        tmp = np.empty([1,3,2048])
+        tmp[0,0] = fan[i:i+2048]
+        tmp[0,1] = drive[i:i+2048]
+        tmp[0,2] = base[i:i+2048]
+        data_cut = np.concatenate((data_cut,tmp))
         label_cut.append(label_code)
-        i+=1
+        i+=randint(1536,2048)
         pass
     label_cut = np.array(label_cut)
     global label_cut_combine,data_cut_combine
@@ -167,15 +167,14 @@ for filepath in filepath_list:
     for item in files:
         if (item!='rename.bat'):
             if (item!='renamelist.xlsx'):
-                if ((item!='OR007@3_0.mat') | (filepath != 'dataset/CWRU/12k_fan_end/')): 
-                    matloader(item,filepath)
+                matloader(item,filepath)
 
-                    t = np.unique(data_cut_combine,axis=0,return_inverse=True,return_index=True,return_counts=True)
-                    data_collide = data_cut_combine[t[1][t[3]==2]]
-                    label_collide = label_cut_combine[t[1][t[3]==2]]
-                    label_collide_values = np.unique(label_collide)
+                t = np.unique(data_cut_combine,axis=0,return_inverse=True,return_index=True,return_counts=True)
+                data_collide = data_cut_combine[t[1][t[3]==2]]
+                label_collide = label_cut_combine[t[1][t[3]==2]]
+                label_collide_values = np.unique(label_collide)
 
-                    print('\r' + str(i) + '/' + str(len(files)),end='')
-                    i+=1
-np.save('dataset/CWRU/label.npy',label_cut_combine)
-np.save('dataset/CWRU/data.npy',data_cut_combine)
+                print('\r' + str(i) + '/' + str(len(files)),end='')
+                i+=1
+np.save('dataset/CWRU_lapped/label.npy',label_cut_combine)
+np.save('dataset/CWRU_lapped/data.npy',data_cut_combine)
