@@ -106,18 +106,18 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True,drop
 ViT_Channels=3 if FullChannel else 1
 print("Nunber of ViT channels:{}.".format(ViT_Channels))
 
-v = LSTM_Function.mylstm( #有两个模型都可以选用，见LSTM_Funtion
-    #input_size = 2048,#input_size需要与LSTM输入X张量.size()的最后一维相同 X.size() = [64,2,2048] 
-    #hidden_size = 256, #LSTMRNN 中隐藏层的数量，可调，貌似越大收敛越快()
-    #num_layers = 2, #LSTM层层数,可调,貌似越小收敛越快()
-    #num_classes = 10, #分类个数,及目标target标签种类,不能改
-    #dropout = 0.1
-    input_size = 128,#越小收敛越快，理论
-    ConvChannel = 16,#ConvChannel*input_size = 2048
-    hidden_size = 128,
-    batch_size = batch_size,
-    num_layers = 2, 
-    dropout=0.1#这部分是mylstm的参数，相比于LSTM增加了一个线性卷积池化层
+v = LSTM_Function.LSTMRNN( #有两个模型都可以选用，见LSTM_Funtion
+    input_size = 128,#input_size需要与LSTM输入X张量.size()的最后一维相同 X.size() = [64,2,2048] 
+    hidden_size = 128, #LSTMRNN 中隐藏层的数量，可调，貌似越大收敛越快()
+    num_layers = 2, #LSTM层层数,可调,貌似越小收敛越快()
+    num_classes = 10, #分类个数,及目标target标签种类,不能改
+    dropout = 0.1
+    #input_size = 128,#越小收敛越快，理论
+    #ConvChannel = 16,#ConvChannel*input_size = 2048
+    #hidden_size = 128,
+    #batch_size = batch_size,
+    #num_layers = 2, 
+    #dropout=0.1#这部分是mylstm的参数，相比于LSTM增加了一个线性卷积池化层
     
 ).to(device)
 weight_decay = 2e-4
