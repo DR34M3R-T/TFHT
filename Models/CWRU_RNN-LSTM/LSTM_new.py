@@ -65,13 +65,13 @@ class BearFaultDataset(Dataset):
         if reshape:
             '''这里现在有用了'''
             #self.inputs = torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
-            self.inputs = torch.unsqueeze(inputs,1)
+            self.inputs = torch.unsqueeze(inputs_f,1)
             print(self.inputs.size())
             self.inputs = torch.squeeze(self.inputs)
             self.inputs = self.inputs[:, :2048]
             print("self.inputs",self.inputs.size())
             #self.inputs = torch.resize(self.inputs[:, :2025],(-1, 45, 45))
-            self.inputs = torch.reshape(self.inputs,(inputs.shape[0], 16, 128))
+            self.inputs = torch.reshape(self.inputs,(inputs.shape[0], 32, 64))
         else:
             self.inputs = torch.cat((torch.unsqueeze(inputs,1),torch.unsqueeze(inputs_f,1)),1)
             #self.inputs = torch.unsqueeze(inputs,1)
@@ -93,7 +93,7 @@ class BearFaultDataset(Dataset):
         # input = self.transform(input)
         return input, target
 # 实例化dataset
-isreshape = True
+isreshape = False
 training_data = BearFaultDataset(data_train, label_train, transform=preprocess, reshape=isreshape)
 #print(training_data)
 test_data = BearFaultDataset(data_test, lable_test, transform=preprocess, reshape=isreshape)
@@ -106,28 +106,28 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True,drop
 ViT_Channels=3 if FullChannel else 1
 print("Nunber of ViT channels:{}.".format(ViT_Channels))
 
-v = LSTM_Function.LSTMRNN( #有两个模型都可以选用，见LSTM_Funtion
-    input_size = 128,#input_size需要与LSTM输入X张量.size()的最后一维相同 X.size() = [64,2,2048] 
-    hidden_size = 128, #LSTMRNN 中隐藏层的数量，可调，貌似越大收敛越快()
-    num_layers = 2, #LSTM层层数,可调,貌似越小收敛越快()
-    num_classes = 10, #分类个数,及目标target标签种类,不能改
-    dropout = 0.1
-    #input_size = 128,#越小收敛越快，理论
-    #ConvChannel = 16,#ConvChannel*input_size = 2048
-    #hidden_size = 128,
-    #batch_size = batch_size,
-    #num_layers = 2, 
-    #dropout=0.1#这部分是mylstm的参数，相比于LSTM增加了一个线性卷积池化层
+v = LSTM_Function.mylstm( #有两个模型都可以选用，见LSTM_Funtion
+    #input_size = 128,#input_size需要与LSTM输入X张量.size()的最后一维相同 X.size() = [64,2,2048] 
+    #hidden_size = 128, #LSTMRNN 中隐藏层的数量，可调，貌似越大收敛越快()
+    #num_layers = 2, #LSTM层层数,可调,貌似越小收敛越快()
+    #num_classes = 10, #分类个数,及目标target标签种类,不能改
+    #dropout = 0.1
+    input_size = 2048,#越小收敛越快，理论
+    ConvChannel = 1,#ConvChannel*input_size = 2048
+    hidden_size = 128,
+    batch_size = batch_size,
+    num_layers = 2, 
+    dropout=0.1#这部分是mylstm的参数，相比于LSTM增加了一个线性卷积池化层
     
 ).to(device)
 weight_decay = 2e-4
-epochs = 100 #定义训练轮数
+epochs = 200 #定义训练轮数
 # Initialize the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
 
-learning_rate = 1e-3 #定义学习率
+learning_rate = 2e-3 #定义学习率
 optimizer = torch.optim.NAdam(v.parameters(), lr=learning_rate,weight_decay=weight_decay,momentum_decay=9e-4) #定义优化器
-ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99) #绑定衰减学习率到优化器
+ExpLR = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=1) #绑定衰减学习率到优化器
 # 定义训练循环
 
 def train_loop(dataloader, model, loss_fn, optimizer):
@@ -136,7 +136,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         X = X.to(device)
         y = y.to(device)
         #print(X.size())  #此时X.size() = [64,2,1,2048],1这个维度没啥用，用squeeze函数去掉
-        #X = torch.squeeze(X,2)
+        X = torch.squeeze(X,2)
         #print(X.size())  #此时X.size() = [64,2,2048]，需要令input_size = 2048才可
         #X = X.permute(0, 1, 2)  #这个换位函数没啥用
         
