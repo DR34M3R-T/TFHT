@@ -113,7 +113,7 @@ v = LSTM_Function.mylstm( #有两个模型都可以选用，见LSTM_Funtion
     #num_classes = 10, #分类个数,及目标target标签种类,不能改
     #dropout = 0.1
     input_size = 2048,#越小收敛越快，理论
-    ConvChannel = 1,#ConvChannel*input_size = 2048
+    ConvChannel = 2,#ConvChannel*input_size = 2048
     hidden_size = 128,
     batch_size = batch_size,
     num_layers = 2, 
