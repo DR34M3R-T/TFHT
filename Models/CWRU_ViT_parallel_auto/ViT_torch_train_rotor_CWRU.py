@@ -30,8 +30,8 @@ def auto_train(argvs,times):
 
     # 导入raw数据集
     # label_name='label_end&position_7.npy'
-    data = torch.from_numpy(np.load('./dataset/CWRU/data.npy')) #7253 3 2048
-    label = torch.from_numpy(np.load('./dataset/CWRU/'+label_name)) #7253
+    data = torch.from_numpy(np.load('./dataset/CWRU_lapped/data.npy')) #7253 3 2048
+    label = torch.from_numpy(np.load('./dataset/CWRU_lapped/'+label_name)) #7253
     label = label.type(torch.LongTensor)
 
     # 去除负标签
