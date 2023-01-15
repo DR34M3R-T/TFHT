@@ -184,7 +184,31 @@ def test_loop(dataloader, model, loss_fn,epoch,acc):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.3f}%, Avg loss: {test_loss:>8f} \n")
     acc.append(100*correct)
     return test_loss,acc
-   
+
+# 预测序列生成 用于绘制混淆矩阵
+def pred_gen(dataloader_list, model):
+    pred_list = torch.tensor([]).to(device)
+    real_list = torch.tensor([]).to(device)
+    for dataloader in dataloader_list:
+        with torch.no_grad():
+            for X, y in dataloader:
+                pred = model(X)
+                pred = pred.argmax(1)
+                real_list = torch.cat((real_list,y))
+                pred_list = torch.cat((pred_list,pred))
+    return pred_list,real_list
+# 输出特征 用于绘制tsne降维图
+def feature_gen(dataloader_list, model):
+    feature_list = torch.tensor([]).to(device)
+    real_list = torch.tensor([]).to(device)
+    for dataloader in dataloader_list:
+        with torch.no_grad():
+            for X, y in dataloader:
+                feature = model(X,feature_out=True)
+                real_list = torch.cat((real_list,y))
+                feature_list = torch.cat((feature_list,feature))
+    return feature_list,real_list
+
 last_loss=100
 now_loss=100
 for t in range(epochs): # 开始训练
@@ -215,6 +239,20 @@ for i in range(len(acc)):
     print(' epoch ',i+1,'   ',' accuracy ',round(acc[i],3))
 print("the best accuracy is ",best," in ",acc.index(max(acc))+1," epoch ")
 print("Done!")
+
+draw_conf_mat = False
+draw_tsne = True
+if draw_conf_mat:
+    p = pred_gen([train_dataloader,test_dataloader],v)
+    np.save('./result/CWRU/p&d10/conf_mat/pred.npy',p[0].numpy())
+    np.save('./result/CWRU/p&d10/conf_mat/real.npy',p[1].numpy().astype('int'))
+if draw_tsne:
+    f = feature_gen([train_dataloader,test_dataloader],v)
+    np.save('./result/CWRU/p&d10/tsne_npy/feature.npy',f[0].numpy())
+    np.save('./result/CWRU/p&d10/tsne_npy/feature_t.npy',f[0][:,0:32].numpy())
+    np.save('./result/CWRU/p&d10/tsne_npy/feature_f.npy',f[0][:,32:64].numpy())
+    np.save('./result/CWRU/p&d10/tsne_npy/label.npy',f[1].numpy().astype('int'))
+# torch.save(v.state_dict(), './result/ViT-state.pt') # 保存训练的模型
 
 # 显示参数数量
 nb_param = 0
